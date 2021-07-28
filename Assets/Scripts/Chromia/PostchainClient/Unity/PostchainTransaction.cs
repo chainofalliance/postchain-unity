@@ -6,6 +6,12 @@ using UnityEngine;
 
 namespace Chromia.Postchain.Client.Unity
 {
+    public class TxStatusResponse
+    {
+        public string status = "";
+        public string rejectReason = "";
+    }
+
     public class PostchainTransaction
     {
         public bool sent = false;
@@ -90,7 +96,7 @@ namespace Chromia.Postchain.Client.Unity
 
         private IEnumerator WaitConfirmation()
         {
-            var request = new PostchainRequest<HTTPStatusResponse>(this._baseUrl, "tx/" + this._brid + "/" + GetTxRID() + "/status");
+            var request = new PostchainRequest<TxStatusResponse>(this._baseUrl, "tx/" + this._brid + "/" + GetTxRID() + "/status");
             yield return request.Get();
 
             var ret = request.parsedContent;
@@ -103,14 +109,14 @@ namespace Chromia.Postchain.Client.Unity
                     break;
                 case "rejected":
                 case "unknown":
-                    this.errorMessage = "Message was rejected";
+                    this.errorMessage = ret.rejectReason;
                     break;
                 case "waiting":
                     yield return new WaitForSeconds(0.511f);
                     yield return WaitConfirmation();
                     break;
                 case "exception":
-                    this.errorMessage = "HTTP Exception: " + ret.message;
+                    this.errorMessage = "HTTP Exception: " + ret.rejectReason;
                     break;
                 default:
                     this.errorMessage = "Got unexpected response from server: " + ret.status;
