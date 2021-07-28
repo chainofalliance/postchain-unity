@@ -10,6 +10,8 @@ namespace Chromia.Postchain.Client
 
     public class BlockchainClient : MonoBehaviour
     {
+        public string BlockchainRID { get { return _blockchainRID; } }
+        
         [SerializeField] private string _blockchainRID;
         [SerializeField] private int _chainId;
         [SerializeField] private string _baseURL;
