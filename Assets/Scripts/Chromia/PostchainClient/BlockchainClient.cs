@@ -7,20 +7,11 @@ using UnityEngine;
 
 namespace Chromia.Postchain.Client
 {
-    internal class HTTPStatusResponse
-    {
-        public HTTPStatusResponse(string status, string message)
-        {
-            this.status = status;
-            this.message = message;
-        }
-
-        public string status = "";
-        public string message = "";
-    }
 
     public class BlockchainClient : MonoBehaviour
     {
+        public string BlockchainRID { get { return _blockchainRID; } }
+        
         [SerializeField] private string _blockchainRID;
         [SerializeField] private int _chainId;
         [SerializeField] private string _baseURL;
@@ -31,6 +22,12 @@ namespace Chromia.Postchain.Client
             {
                 StartCoroutine(InitializeBRIDFromChainID());
             }
+        }
+
+        public void Setup(string blockchainRID, string baseURL)
+        {
+            this._blockchainRID = blockchainRID;
+            this._baseURL = baseURL;
         }
 
         ///<summary>

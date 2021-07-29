@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 
 namespace Chromia.Postchain.Client.Unity
 {
-    public class PostchainRequestRaw : MonoBehaviour
+    public class PostchainRequestRaw
     {
         public bool error = false;
         public string errorMessage = "";
