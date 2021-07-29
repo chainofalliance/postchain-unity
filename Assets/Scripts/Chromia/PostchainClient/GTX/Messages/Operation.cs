@@ -3,15 +3,26 @@ using System.Linq;
 
 namespace Chromia.Postchain.Client
 {
-    [System.Obsolete("Not used any more", true)]
-    internal class GTXOperation
+    internal class Operation
     {
         public string OpName;
         public List<GTXValue> Args;
+        private object[] _rawArgs;
 
-        public GTXOperation(string opName = "")
+        public Operation(string opName, object[] args): this()
         {
             this.OpName = opName;
+            this._rawArgs = args;
+            
+            foreach (var opArg in args)
+            {
+                Args.Add(Gtx.ArgToGTXValue(opArg));
+            }
+        }
+
+        private Operation()
+        {
+            this.OpName = "";
             this.Args = new List<GTXValue>();
         }
 
@@ -22,7 +33,7 @@ namespace Chromia.Postchain.Client
                 return false;
             }
             else { 
-                GTXOperation gtxOperation = (GTXOperation) obj;
+                Operation gtxOperation = (Operation) obj;
                 
                 return this.OpName.Equals(gtxOperation.OpName)
                     && ((this.Args == null || gtxOperation.Args == null) ? this.Args == gtxOperation.Args : Enumerable.SequenceEqual(this.Args, gtxOperation.Args));
@@ -34,9 +45,24 @@ namespace Chromia.Postchain.Client
             return OpName.GetHashCode();
         }
 
+        public GTXValue ToGtxValue()
+        {
+            var gtxValue = new GTXValue();
+            gtxValue.Choice = GTXValueChoice.Array;
+            gtxValue.Array = new List<GTXValue>(){Gtx.ArgToGTXValue(this.OpName)};
+            gtxValue.Array.AddRange(this.Args);
+
+            return gtxValue;
+        }
+
+        public object[] Raw()
+        {
+            return new object[]{this.OpName, this._rawArgs};
+        }
+
         public byte[] Encode()
         {
-            var messageWriter = new AsnWriter();
+            var messageWriter = new ASN1.AsnWriter();
             messageWriter.PushSequence();
 
             messageWriter.WriteUTF8String(this.OpName);
@@ -55,18 +81,20 @@ namespace Chromia.Postchain.Client
             return messageWriter.Encode();
         }
 
-        // public static GTXOperation Decode(byte[] encodedMessage)
-        // {
-        //     var gtxOperation = new AsnReader(encodedMessage, AsnEncodingRules.BER);
-        //     var gtxOperationSequence = gtxOperation.ReadSequence();
+        public static Operation Decode(ASN1.AsnReader outerSequence)
+        {
+            var op = new Operation();
+            var operationSequence = outerSequence.ReadSequence();
 
-        //     var newObject = new GTXOperation();
-        //     newObject.OpName = gtxOperationSequence.ReadCharacterString(UniversalTagNumber.UTF8String);
+            op.OpName = operationSequence.ReadUTF8String();
 
-        //     var valueSequence = gtxOperationSequence.ReadSequence();
-        //     newObject.Args = ASN1Util.SequenceToList<GTXValue>(valueSequence, GTXValue.Decode);
+            var valueSequence = operationSequence.ReadSequence();
+            while (valueSequence.RemainingBytes > 0)
+            {
+                op.Args.Add(null);
+            }
 
-        //     return newObject;
-        // }
+            return op;
+        }
     }
 }

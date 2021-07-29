@@ -104,23 +104,33 @@ namespace Chromia.Postchain.Client.Unity
             switch(ret.status)
             {
                 case "confirmed":
+                {
                     this.error = false;
                     this.errorMessage = "";
                     break;
+                }
                 case "rejected":
                 case "unknown":
+                {
                     this.errorMessage = ret.rejectReason;
                     break;
+                }
                 case "waiting":
+                {
                     yield return new WaitForSeconds(0.511f);
                     yield return WaitConfirmation();
                     break;
+                }
                 case "exception":
+                {
                     this.errorMessage = "HTTP Exception: " + ret.rejectReason;
                     break;
+                }
                 default:
+                {
                     this.errorMessage = "Got unexpected response from server: " + ret.status;
                     break;
+                }
             }
         }
         

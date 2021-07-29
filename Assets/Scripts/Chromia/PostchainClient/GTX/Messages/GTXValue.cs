@@ -56,7 +56,7 @@ namespace Chromia.Postchain.Client
 
         public byte[] Encode()
         {
-            var messageWriter = new AsnWriter();
+            var messageWriter = new ASN1.AsnWriter();
 
             var choiceSize = 0;
             var choiceConstants = new List<byte>();
@@ -144,6 +144,62 @@ namespace Chromia.Postchain.Client
             
             return choiceConstants.ToArray().Concat(messageWriter.Encode()).ToArray();
  
+        }
+
+        public static GTXValue Decode(ASN1.AsnReader sequence)
+        {
+            var val = new GTXValue();
+
+            switch (sequence.PeekTag())
+            {
+                case ASN1.AsnUtil.TAG_NULL:
+                {
+                    val.Choice = GTXValueChoice.Null; 
+                    break;
+                }
+                case ASN1.AsnUtil.TAG_BYTE_ARRAY:
+                {
+                    val.Choice = GTXValueChoice.ByteArray;
+                    val.ByteArray = sequence.ReadOctetString(); 
+                    break;
+                }
+                case ASN1.AsnUtil.TAG_STRING:
+                {
+                    val.Choice = GTXValueChoice.String;
+                    val.String = sequence.ReadUTF8String(); 
+                    break;
+                }
+                case ASN1.AsnUtil.TAG_INTEGER:
+                {
+                    val.Choice = GTXValueChoice.Integer;
+                    val.Integer = sequence.ReadInteger(); 
+                    break;
+                }
+                case ASN1.AsnUtil.TAG_ARRAY:
+                {
+                    val.Choice = GTXValueChoice.Array;
+                    val.Array = new List<GTXValue>();
+                    var innerSequence = sequence.ReadSequence();
+                    while (innerSequence.RemainingBytes > 0)
+                    {
+                        val.Array.Add(GTXValue.Decode(innerSequence));
+                    }
+                    break;
+                }
+                case ASN1.AsnUtil.TAG_DICT:
+                {
+                    val.Choice = GTXValueChoice.Dict;
+                    val.Dict = new List<DictPair>();
+                    var innerSequence = sequence.ReadSequence();
+                    while (innerSequence.RemainingBytes > 0)
+                    {
+                        val.Dict.Add(DictPair.Decode(innerSequence));
+                    }
+                    break;
+                }
+            }
+
+            return val;
         }
 
         private static byte[] TrimByteList(byte[] byteList)

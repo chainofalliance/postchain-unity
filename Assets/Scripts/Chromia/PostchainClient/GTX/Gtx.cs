@@ -5,17 +5,23 @@ using System.Collections.Generic;
 namespace Chromia.Postchain.Client
 {
 
-    internal class Gtx
+    public class Gtx
     {
         private string BlockchainID;
-        private List<object[]> Operations;
+        private List<Operation> Operations;
         private List<byte[]> Signers;
         private List<byte[]> Signatures;
 
-        public Gtx(string blockchainRID)
+        public Gtx(string blockchainRID): this()
         {
             this.BlockchainID = blockchainRID;
-            this.Operations = new List<object[]>();
+
+        }
+
+        private Gtx()
+        {
+            this.BlockchainID = "";
+            this.Operations = new List<Operation>();
             this.Signers = new List<byte[]>();
             this.Signatures = new List<byte[]>();
         }
@@ -27,8 +33,7 @@ namespace Chromia.Postchain.Client
                 throw new Exception("Cannot add function calls to an already signed gtx");
             }
 
-            object[] opArr = {opName, args};
-            this.Operations.Add(opArr);
+            this.Operations.Add(new Operation(opName, args));
    
             return this;
         }
@@ -86,6 +91,10 @@ namespace Chromia.Postchain.Client
                     gtxValue.Dict.Add(new DictPair(dictPair.Key, ArgToGTXValue(dictPair.Value)));
                 }
             }
+            else if (arg is Operation)
+            {
+                return ((Operation) arg).ToGtxValue();
+            }
             else
             {
                 throw new System.Exception("Chromia.PostchainClient.GTX Gtx.ArgToGTXValue() Can't create GTXValue out of type " + arg.GetType());
@@ -125,11 +134,14 @@ namespace Chromia.Postchain.Client
             return encodedBuffer;
         }
 
-        private object[] GetGtvTxBody(bool asHexString = false)
+        private object[] GetGtvTxBody(bool operationsRaw)
         {
             var body = new List<object>();
             body.Add(PostchainUtil.HexStringToBuffer(this.BlockchainID));
-            body.Add(this.Operations.ToArray());
+            if (operationsRaw)
+                body.Add((from Operation op in this.Operations select op.Raw()).ToArray());
+            else
+                body.Add(this.Operations.ToArray());
             body.Add(this.Signers.ToArray());
 
             return body.ToArray();
@@ -159,117 +171,48 @@ namespace Chromia.Postchain.Client
 
         public string Serialize()
         {
-            var gtxBody = new List<object>();
-
-            gtxBody.Add(GetGtvTxBody());
-            gtxBody.Add(this.Signatures.ToArray());
             
-            return PostchainUtil.ByteArrayToString(Gtx.ArgToGTXValue(gtxBody.ToArray()).Encode());
+            return PostchainUtil.ByteArrayToString(Encode());
         }
 
-        public static GTXValue Deserialize(byte[] encodedMessage)
+        public byte[] Encode()
         {
-            if (encodedMessage[0] >> 4 != 0xa)
+            var gtxBody = new List<object>();
+
+            gtxBody.Add(GetGtvTxBody(false));
+            gtxBody.Add(this.Signatures.ToArray());
+
+            return Gtx.ArgToGTXValue(gtxBody.ToArray()).Encode();
+        }
+
+        public static Gtx Decode(byte[] encodedMessage)
+        {
+            var gtx = new Gtx();
+            var gtxTransaction = new ASN1.AsnReader(encodedMessage);
+            // var gtxValues = gtxTransaction.ReadArray();
+
+            var bridSequence = gtxTransaction.ReadSequence();
+            gtx.BlockchainID = bridSequence.ReadUTF8String();
+
+            var operationSequence = gtxTransaction.ReadSequence();
+            while (operationSequence.RemainingBytes > 0)
             {
-                return new GTXValue();
+                gtx.Operations.Add(Operation.Decode(operationSequence));
             }
 
-            var messageLength = GetLength(encodedMessage);
-            int messageOctetLength = GetOctetLength(encodedMessage);
-            var newObject = new GTXValue();
-            switch (encodedMessage[0] & 0xF)
-            {          
-                case (0x1):
-                {
-                    // ByteArray
-                    if (encodedMessage[1+messageOctetLength] != 0x04)
-                    {
-                        throw new System.Exception("Chromia.Postchain.Client.GTX Gtx.Deserialize() ByteArray case. Not octet string.");
-                    }
-
-                    int length = encodedMessage[3];
-
-                    newObject.Choice = GTXValueChoice.ByteArray;
-                    newObject.ByteArray = encodedMessage.Skip(4).Take(length).ToArray();
-
-                    break;
-                }
-                case (0x2):
-                {
-                    // String
-                    if (encodedMessage[1+messageOctetLength] != 0x0c)
-                    {
-                        throw new System.Exception("Chromia.Postchain.Client.GTX Gtx.Deserialize() String case. Not UTF8String.");
-                    }
-
-                    int length = encodedMessage[1+messageOctetLength+1];
-
-                    newObject.Choice = GTXValueChoice.String;
-                    newObject.String = System.Text.Encoding.UTF8.GetString(encodedMessage.Skip(4).Take(length).ToArray());
-                    break;
-                }
-                case (0x3):
-                {
-                    // Integer
-                    if (encodedMessage[1+messageOctetLength] != 0x02)
-                    {
-                        throw new System.Exception("Chromia.Postchain.Client.GTX Gtx.Deserialize() Integer case. Not primitive integer type.");
-                    }
-
-                    int length = encodedMessage[3];
-                    int newInteger = 0;
-                    for (int i = 4; i < length + 4; i++)
-                    {
-                        newInteger = (newInteger << 8) | encodedMessage[i];
-                    }
-
-                    newObject.Choice = GTXValueChoice.Integer;
-                    newObject.Integer = newInteger;
-
-                    break;
-                }
-                case (0x4):
-                {
-                    // DictPair
-                    throw new System.Exception("Chromia.Postchain.Client.GTX Gtx.Deserialize() Dict case. Not implemented yet.");
-                    // newObject.Choice = GTXValueChoice.Dict;
-                    // break;
-                } 
-                case (0x5):
-                {
-                    // Array
-                    if (encodedMessage[1+messageOctetLength] != 0x30)
-                    {
-                        throw new System.Exception("Chromia.Postchain.Client.GTX Gtx.Deserialize() Array case. Not sequence of.");
-                    }
-
-                    byte[] sequence = encodedMessage.Skip(1+messageOctetLength).ToArray();
-                    int sequenceLength = GetLength(sequence);
-                    int sequenceOctetLength = GetOctetLength(sequence);
-                    
-                    int startIndex = 2 + messageOctetLength + sequenceOctetLength;
-
-                    newObject.Choice = GTXValueChoice.Array;
-                    newObject.Array = new List<GTXValue>();
-                    while (startIndex < sequenceLength)
-                    {
-                        byte[] newElement = encodedMessage.Skip(startIndex).ToArray();
-                        int elementLength = GetLength(newElement) + GetOctetLength(newElement) + 1;
-                        newElement = newElement.Take(elementLength).ToArray();
-
-                        newObject.Array.Add(Deserialize(newElement));
-                        startIndex += elementLength;
-                    }
-                    
-                    break;
-                }      
-                default:
-                {
-                    throw new System.Exception("Chromia.Postchain.Client.GTX Gtx.Deserialize() Default case. Unknown tag " + (encodedMessage[0] & 0xF).ToString("X1"));
-                }
+            var signerSequence = gtxTransaction.ReadSequence();
+            while (signerSequence.RemainingBytes > 0)
+            {
+                gtx.Signers.Add(signerSequence.ReadOctetString());
             }
 
-            return newObject;
+            var signatureSequence = gtxTransaction.ReadSequence();
+            while (signatureSequence.RemainingBytes > 0)
+            {
+                gtx.Signatures.Add(signatureSequence.ReadOctetString());
+            }
+
+            return gtx;
         }
 
         private static int GetLength(byte[] encodedMessage)
@@ -302,13 +245,30 @@ namespace Chromia.Postchain.Client
             }
         }
 
-        /*
-        public static Gtx Deserialize(byte[] gtxBytes)
+        public override bool Equals(object obj)
         {
-            var newGTXObject = new Gtx();
-            newGTXObject.Transaction = GTXTransaction.Decode(gtxBytes);
-            return newGTXObject;
+            if(this == obj)
+            {
+                return true;
+            }
+            if(! this.GetType().Equals(obj.GetType()))
+            {
+                return false;
+            }
+
+            Gtx p = (Gtx) obj;
+            return this.BlockchainID == p.BlockchainID
+                && Enumerable.SequenceEqual(this.Operations, p.Operations)
+                && Enumerable.SequenceEqual(this.Signers, p.Signers)
+                && Enumerable.SequenceEqual(this.Signatures, p.Signatures);
         }
-        */
+
+        public override int GetHashCode()
+        {
+            return BlockchainID.GetHashCode()
+                + Operations.GetHashCode()
+                + Signers.GetHashCode()
+                + Signatures.GetHashCode();
+        }
     }
 }
