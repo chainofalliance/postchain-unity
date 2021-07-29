@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System;
 
 namespace Chromia.Postchain.Ft3
 {
@@ -7,31 +6,30 @@ namespace Chromia.Postchain.Ft3
     {
         public static Operation Register(AuthDescriptor authDescriptor)
         {
-            var gtv = new List<dynamic>() {
-                authDescriptor
+            var gtv = new List<object>() {
+                authDescriptor.ToGTV()
             };
 
             return new Operation("ft3.dev_register_account", gtv.ToArray());
         }
 
-        // one operation that updates the counter of rate limit of the account but does not cost points
-        public static Operation FreeOp(byte[] accountID)
+        public static Operation FreeOp(string accountID)
         {
-           var gtv = new List<dynamic>() {
+            var gtv = new List<object>() {
                 accountID
             };
 
-            return new Operation("ft3.dev_free_op", gtv.ToArray()); 
+            return new Operation("ft3.dev_free_op", gtv.ToArray());
         }
 
-        public static Operation GivePoints(byte[] accountID, int points)
+        public static Operation GivePoints(string accountID, int points)
         {
-           var gtv = new List<dynamic>() {
+            var gtv = new List<object>() {
                 accountID,
                 points
             };
 
-            return new Operation("ft3.dev_give_points", gtv.ToArray()); 
+            return new Operation("ft3.dev_give_points", gtv.ToArray());
         }
     }
 }

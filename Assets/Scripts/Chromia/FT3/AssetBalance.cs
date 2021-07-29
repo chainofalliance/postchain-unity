@@ -1,5 +1,7 @@
-using System.Threading.Tasks;
+
 using System.Collections.Generic;
+using System.Collections;
+using System;
 
 namespace Chromia.Postchain.Ft3
 {
@@ -14,47 +16,61 @@ namespace Chromia.Postchain.Ft3
             this.Asset = asset;
         }
 
-        // public static async Task<List<AssetBalance>> GetByAccountId(byte[] id, Blockchain blockchain)
-        // {
-        //     var assets = await blockchain.Connection.Gtx.Query<dynamic>("ft3.get_asset_balances", ("account_id", Util.ByteArrayToString(id)));
-        //     List<AssetBalance> assetsBalances = new List<AssetBalance>();
+        public static IEnumerator GetByAccountId(string id, Blockchain blockchain, Action<AssetBalance[]> onSuccess)
+        {
+            yield return blockchain.Query<AssetBalanceQuery[]>("ft3.get_asset_balances", new List<(string, object)>() { ("account_id", id) }.ToArray(),
+           (AssetBalanceQuery[] balanceQuery) =>
+           {
+               onSuccess(mapAssetBalances(balanceQuery));
+           },
+           (string error) => { });
+        }
 
-        //     foreach (var asset in assets.content)
-        //     {
-        //         assetsBalances.Add(
-        //             new AssetBalance(
-        //                 (long) asset["amount"],
-        //                 new Asset(
-        //                     (string) asset["name"],
-        //                     Util.HexStringToBuffer((string) asset["chain_id"])
-        //                     )                    
-        //             )
-        //         );
-        //     }
-        //     return assetsBalances;
-        // }
+        public static IEnumerator GetByAccountAndAssetId(string accountId, string assetId, Blockchain blockchain, Action<AssetBalance> onSuccess)
+        {
+            yield return blockchain.Query<AssetBalanceQuery>("ft3.get_asset_balance", new List<(string, object)>() {
+                ("account_id", accountId),
+                ("asset_id", assetId)
+            }.ToArray(),
+           (AssetBalanceQuery balanceQuery) =>
+           {
+               onSuccess(mapAssetBalance(balanceQuery));
+           },
+           (string error) => { });
+        }
 
-        // public static async Task<AssetBalance> GetByAccountAndAssetId(byte[] accountId, byte[] assetId, Blockchain blockchain)
-        // {
-        //     var asset = await blockchain.Connection.Gtx.Query<dynamic>("ft3.get_asset_balance", 
-        //                                                         ("account_id", Util.ByteArrayToString(accountId)),
-        //                                                         ("asset_id", Util.ByteArrayToString(assetId))
-        //     );
+        public static IEnumerator GiveBalance(string accountId, string assetId, int amount, Blockchain blockchain, Action onSuccess)
+        {
+            var request = blockchain.Connection.NewTransaction(new byte[][] { }, (string error) => { UnityEngine.Debug.Log(error); });
+            request.AddOperation("ft3.dev_give_balance", assetId, accountId, amount);
+            yield return request.PostAndWait(onSuccess);
+        }
 
-        //     if(asset.control.Error)
-        //     {
-        //         return null;
-        //     }
+        public struct AssetBalanceQuery
+        {
+            public string id;
+            public string name;
+            public long amount;
+            public string chain_id;
+        }
 
-        //     return new AssetBalance((long) asset.content["amount"], new Asset((string) asset.content["name"], (byte[]) asset.content["chain_id"]));
-        // }
+        public static AssetBalance[] mapAssetBalances(AssetBalanceQuery[] balanceQuery)
+        {
+            List<AssetBalance> assetsBalances = new List<AssetBalance>();
+            foreach (var item in balanceQuery)
+            {
+                assetsBalances.Add(mapAssetBalance(item));
+            }
 
-        // public static async Task GiveBalance(byte[] accountId, byte[] assetId, int amount, Blockchain blockchain)
-        // {
-        //     var tx = blockchain.Connection.Gtx.NewTransaction(new byte[][] {});
-        //     tx.AddOperation("ft3.dev_give_balance", Util.ByteArrayToString(assetId), Util.ByteArrayToString(accountId), amount);
-        //     await tx.PostAndWaitConfirmation();
-        // }
+            return assetsBalances.ToArray();
+        }
+
+        public static AssetBalance mapAssetBalance(AssetBalanceQuery balanceQuery)
+        {
+            return new AssetBalance(
+                balanceQuery.amount,
+                new Asset(balanceQuery.name, balanceQuery.chain_id)
+            );
+        }
     }
-
 }

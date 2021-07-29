@@ -4,44 +4,44 @@ namespace Chromia.Postchain.Ft3
 {
     public static class AccountQueries
     {
-        public static dynamic[] AccountAuthDescriptors(byte[] accountId)
-        {
-            var gtv = new List<dynamic>() {
-                "ft3.get_account_auth_descriptors",
-                ("id", Util.ByteArrayToString(accountId))
-            };
+        // public static object[] AccountAuthDescriptors(byte[] accountId)
+        // {
+        //     var gtv = new List<object>() {
+        //         "ft3.get_account_auth_descriptors",
+        //         ("id", Util.ByteArrayToString(accountId))
+        //     };
 
-            return gtv.ToArray();
-        }
+        //     return gtv.ToArray();
+        // }
 
-        public static dynamic[] AccountById(byte[] id)
-        {
-            var gtv = new List<dynamic>() {
-                "ft3.get_account_by_id",
-                ("id", Util.ByteArrayToString(id))
-            };
+        // public static object[] AccountById(byte[] id)
+        // {
+        //     var gtv = new List<object>() {
+        //         "ft3.get_account_by_id",
+        //         ("id", Util.ByteArrayToString(id))
+        //     };
 
-            return gtv.ToArray();
-        }
+        //     return gtv.ToArray();
+        // }
 
-        public static dynamic[] AccountsByParticipantId(byte[] id)
-        {
-            var gtv = new List<dynamic>() {
-                "ft3.get_accounts_by_participant_id",
-                ("id", Util.ByteArrayToString(id))
-            };
+        // public static object[] AccountsByParticipantId(byte[] id)
+        // {
+        //     var gtv = new List<object>() {
+        //         "ft3.get_accounts_by_participant_id",
+        //         ("id", Util.ByteArrayToString(id))
+        //     };
 
-            return gtv.ToArray();
-        }
+        //     return gtv.ToArray();
+        // }
 
-        public static dynamic[] AccountsByAuthDescriptorId(byte[] id)
-        {
-            var gtv = new List<dynamic>() {
-                "ft3.get_accounts_by_auth_descriptor_id",
-                ("descriptor_id", Util.ByteArrayToString(id))
-            };
+        // public static object[] AccountsByAuthDescriptorId(byte[] id)
+        // {
+        //     var gtv = new List<object>() {
+        //         "ft3.get_accounts_by_auth_descriptor_id",
+        //         ("descriptor_id", Util.ByteArrayToString(id))
+        //     };
 
-            return gtv.ToArray();
-        }
+        //     return gtv.ToArray();
+        // }
     }
 }

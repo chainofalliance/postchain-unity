@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+
 using Chromia.Postchain.Client;
 
 namespace Chromia.Postchain.Ft3
@@ -19,17 +20,17 @@ namespace Chromia.Postchain.Ft3
 
         public List<byte[]> Signers
         {
-            get => new List<byte[]>(){this._pubkey};
+            get => new List<byte[]>() { this._pubkey };
         }
 
         public List<byte[]> PubKey
         {
-            get => new List<byte[]>() {this._pubkey};
+            get => new List<byte[]>() { this._pubkey };
         }
 
-        public byte[] ID
+        public string ID
         {
-            get => this.Hash();
+            get => Util.ByteArrayToString(this.Hash());
         }
 
         public IAuthdescriptorRule Rule
@@ -37,12 +38,12 @@ namespace Chromia.Postchain.Ft3
             get => this.AuthRule;
         }
 
-        public dynamic[] ToGTV()
+        public object[] ToGTV()
         {
-            var gtv = new List<dynamic>(){
+            var gtv = new List<object>(){
                 Util.AuthTypeToString(AuthType.SingleSig),
                 new List<string>(){Util.ByteArrayToString(this._pubkey)}.ToArray(),
-                new List<dynamic>(){this.Flags.ToGTV(), Util.ByteArrayToString(this._pubkey)}.ToArray(),
+                new List<object>(){this.Flags.ToGTV(), Util.ByteArrayToString(this._pubkey)}.ToArray(),
                 this.AuthRule?.ToGTV()
             };
 
@@ -51,14 +52,14 @@ namespace Chromia.Postchain.Ft3
 
         public byte[] Hash()
         {
-            var gtv = new List<dynamic>(){
+            var gtv = new List<object>(){
                 Util.AuthTypeToString(AuthType.SingleSig),
                 new List<byte[]>(){this._pubkey}.ToArray(),
-                new List<dynamic>(){this.Flags.ToGTV(), Util.ByteArrayToString(this._pubkey)}.ToArray(),
+                new List<object>(){this.Flags.ToGTV(), Util.ByteArrayToString(this._pubkey)}.ToArray(),
                 this.AuthRule?.ToGTV()
-                
+
             }.ToArray();
-            
+
             return PostchainUtil.HashGTV(gtv);
         }
     }

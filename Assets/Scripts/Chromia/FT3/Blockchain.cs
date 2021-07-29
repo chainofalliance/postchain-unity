@@ -33,9 +33,8 @@ namespace Chromia.Postchain.Ft3
             }
 
             GameObject goConnection = new GameObject();
-            goConnection.AddComponent<BlockchainClient>();
+            BlockchainClient connection = goConnection.AddComponent<BlockchainClient>();
 
-            BlockchainClient connection = goConnection.GetComponent<BlockchainClient>();
             connection.Setup(
                 blockchainRID,
                 chainConnectionInfo.Url
@@ -60,57 +59,49 @@ namespace Chromia.Postchain.Ft3
             return new BlockchainSession(user, this);
         }
 
-        // public async Task<Account[]> GetAccountsByParticipantId(byte[] id, User user)
-        // {
-        //     return await Account.GetByParticipantId(id, this.NewSession(user));
-        // }
+        public IEnumerator GetAccountsByParticipantId(string id, User user, Action<Account[]> onSuccess)
+        {
+            yield return Account.GetByParticipantId(id, this.NewSession(user), onSuccess);
+        }
 
-        // public async Task<Account[]> GetAccountsByAuthDescriptorId(byte[] id, User user)
-        // {
-        //     return await Account.GetByAuthDescriptorId(id, this.NewSession(user));
-        // }
+        public IEnumerator GetAccountsByAuthDescriptorId(string id, User user, Action<Account[]> onSuccess)
+        {
+            yield return Account.GetByAuthDescriptorId(id, this.NewSession(user), onSuccess);
+        }
 
-        // public async Task<Account> RegisterAccount(AuthDescriptor authDescriptor, User user)
-        // {
-        //     return await Account.Register(authDescriptor, this.NewSession(user));
-        // }
+        public IEnumerator RegisterAccount<T>(AuthDescriptor authDescriptor, User user, Action<Account> onSuccess)
+        {
+            yield return Account.Register<T>(authDescriptor, this.NewSession(user), onSuccess);
+        }
 
-        // public async Task<Asset[]> GetAssetsByName(string name)
-        // {
-        //     return await Asset.GetByName(name, this);
-        // }
+        public IEnumerator GetAssetsByName(string name, Action<Asset[]> onSuccess)
+        {
+            yield return Asset.GetByName(name, this, onSuccess);
+        }
 
-        // public async Task<Asset> GetAssetById(byte[] id)
-        // {
-        //     return await Asset.GetById(id, this);
-        // }
+        public IEnumerator GetAssetById(string id, Action<Asset> onSuccess)
+        {
+            yield return Asset.GetById(id, this, onSuccess);
+        }
 
-        // public async Task<Asset[]> GetAllAssets()
-        // {
-        //     return await Asset.GetAssets(this);
-        // }
+        public IEnumerator GetAllAssets(Action<Asset[]> onSuccess)
+        {
+            yield return Asset.GetAssets(this, onSuccess);
+        }
 
-        // public async Task LinkChain(byte[] chainId)
-        // {
-        //     var tx = this.Connection.Gtx.NewTransaction(new byte[][] { });
-        //     tx.AddOperation("ft3.xc.link_chain", Util.ByteArrayToString(chainId));
-        //     await tx.PostAndWaitConfirmation();
-        // }
+        public IEnumerator LinkChain(string chainId, Action onSuccess)
+        {
+            var request = this.Connection.NewTransaction(new byte[][] { }, (string error) => { UnityEngine.Debug.Log(error); });
+            request.AddOperation("ft3.xc.link_chain", chainId);
+            yield return request.PostAndWait(onSuccess);
+        }
 
-        // public async Task<bool> IsLinkedWithChain(byte[] chainId)
-        // {
-        //     var info = await this.Query<int>(
-        //         "ft3.xc.is_linked_with_chain",
-        //         ("chain_rid", Util.ByteArrayToString(chainId))
-        //     );
-
-        //     if (info.control.Error)
-        //     {
-        //         return false;
-        //     }
-
-        //     return info.content == 1;
-        // }
+        public IEnumerator IsLinkedWithChain(string chainId, Action<bool> onSuccess)
+        {
+            yield return this.Query<bool>("ft3.xc.is_linked_with_chain", new List<(string, object)>() { ("chain_rid", chainId) }.ToArray(),
+            (bool is_linked) => { onSuccess(is_linked); },
+            (string error) => { });
+        }
 
         public IEnumerator GetLinkedChainsIds<T>(Action<string[]> onSuccess, Action<string> onError)
         {
@@ -154,18 +145,19 @@ namespace Chromia.Postchain.Ft3
             return this.Connection.Query<T>(queryName, queryObject, onSuccess, onError);
         }
 
-        // public async Task<PostchainErrorControl> Call(Operation operation, User user)
-        // {
-        //     var txBuilder = this.CreateTransactionBuilder();
-        //     txBuilder.AddOperation(operation);
-        //     var tx = txBuilder.Build(user.AuthDescriptor.Signers);
-        //     tx.Sign(user.KeyPair);
-        //     return await tx.Post();
-        // }
-
-        public TransactionBuilder CreateTransactionBuilder()
+        public IEnumerator Call<T>(Operation operation, User user, Action onSuccess)
         {
-            return new TransactionBuilder(this);
+            KeyPair keyPair = user.KeyPair;
+            var request = this.Connection.NewTransaction(
+                new byte[][] { keyPair.PubKey },
+                (string error) => { Debug.Log(error); });
+
+            request.AddOperation(operation.Name, operation.Args);
+            // TODO NOP()
+
+            request.Sign(keyPair.PrivKey, keyPair.PubKey);
+
+            yield return request.PostAndWait(onSuccess);
         }
     }
 }

@@ -1,6 +1,5 @@
-using Chromia.Postchain.Client;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Collections;
 using System.Linq;
 using System;
 
@@ -15,7 +14,6 @@ namespace Chromia.Postchain.Ft3
 
     public enum FlagsType
     {
-
         None,
         Account,
         Transfer
@@ -36,7 +34,7 @@ namespace Chromia.Postchain.Ft3
             return this.FlagList.Contains(flag);
         }
 
-        public dynamic[] ToGTV()
+        public object[] ToGTV()
         {
             var validFlags = new List<string>();
             foreach (var flag in this.FlagList)
@@ -53,7 +51,7 @@ namespace Chromia.Postchain.Ft3
 
     public interface AuthDescriptor
     {
-        byte[] ID
+        string ID
         {
             get;
         }
@@ -70,26 +68,25 @@ namespace Chromia.Postchain.Ft3
             get;
         }
         byte[] Hash();
-        dynamic[] ToGTV();
+        object[] ToGTV();
     }
 
     public class Account
     {
-        // private Payme<ntHistorySyncManager _paymentHistorySyncManager = new PaymentHistorySyncManager();
-        public readonly byte[] Id;
+        public readonly string Id;
         public List<AuthDescriptor> AuthDescriptor;
         public List<AssetBalance> Assets = new List<AssetBalance>();
         public RateLimit RateLimit;
         public readonly BlockchainSession Session;
 
-        public Account(byte[] id, AuthDescriptor[] authDescriptor, BlockchainSession session)
+        public Account(string id, AuthDescriptor[] authDescriptor, BlockchainSession session)
         {
             this.Id = id;
             this.AuthDescriptor = authDescriptor.ToList();
             this.Session = session;
         }
 
-        public byte[] GetID()
+        public string GetID()
         {
             return Id;
         }
@@ -99,46 +96,59 @@ namespace Chromia.Postchain.Ft3
             return this.Session.Blockchain;
         }
 
-        // public static async Task<Account[]> GetByParticipantId(byte[] id, BlockchainSession session)
-        // {
-        //     // var gtv = AccountQueries.AccountsByParticipantId(id);
-        //     (dynamic content, PostchainErrorControl control) accountIds = await session.Query<dynamic>("ft3.get_accounts_by_participant_id", ("id", Util.ByteArrayToString(id)));
+        public static IEnumerator GetByParticipantId(string id, BlockchainSession session, Action<Account[]> onSuccess)
+        {
+            List<string> accountIDs = null;
+            yield return session.Query<List<string>>("ft3.get_accounts_by_participant_id", new List<(string, object)>() { ("id", id) }.ToArray(),
+            (List<string> _accountIDs) =>
+            {
+                accountIDs = _accountIDs;
+            },
+            (string error) => { });
 
+            yield return Account.GetByIds(accountIDs, session,
+            (Account[] accounts) =>
+            {
+                onSuccess(accounts);
+            });
+        }
 
-        //     var idList = new List<byte[]>();
-        //     foreach (var accountId in accountIds.content)
-        //     {
-        //         idList.Add(Util.HexStringToBuffer((string)accountId));
-        //     }
+        public static IEnumerator GetByAuthDescriptorId(string id, BlockchainSession session, Action<Account[]> onSuccess)
+        {
+            List<string> accountIDs = null;
+            yield return session.Query<List<string>>("ft3.get_accounts_by_auth_descriptor_id", new List<(string, object)>() { ("id", id) }.ToArray(),
+            (List<string> _accountIDs) =>
+            {
+                accountIDs = _accountIDs;
+            },
+            (string error) => { });
 
-        //     return await Account.GetByIds(idList, session);
-        // }
+            yield return Account.GetByIds(accountIDs, session,
+            (Account[] accounts) =>
+            {
+                onSuccess(accounts);
+            });
+        }
 
-        // public static async Task<Account[]> GetByAuthDescriptorId(byte[] id, BlockchainSession session)
-        // {
-        //     // var gtv = AccountQueries.AccountsByAuthDescriptorId(id);
-        //     (dynamic content, PostchainErrorControl control) accountIds = await session.Query<dynamic>("ft3.get_accounts_by_auth_descriptor_id", ("descriptor_id", Util.ByteArrayToString(id)));
+        public static IEnumerator Register<T>(AuthDescriptor authDescriptor, BlockchainSession session, Action<Account> onSuccess)
+        {
+            Account account = null;
+            yield return session.Call<T>(AccountDevOperations.Register(authDescriptor),
+            () =>
+                {
+                    account = new Account(
+                        Util.ByteArrayToString(authDescriptor.Hash()),
+                        new List<AuthDescriptor> { authDescriptor }.ToArray(),
+                        session);
+                }
+            );
 
-        //     var idList = new List<byte[]>();
-        //     foreach (var accountId in accountIds.content)
-        //     {
-        //         idList.Add(Util.HexStringToBuffer((string)accountId));
-        //     }
-
-        //     return await Account.GetByIds(idList, session);
-        // }
-
-        // public static async Task<Account> Register(AuthDescriptor authDescriptor, BlockchainSession session)
-        // {
-        //     PostchainErrorControl opControl = await session.Call(AccountDevOperations.Register(authDescriptor));
-        //     if (opControl.Error)
-        //     {
-        //         return null;
-        //     }
-        //     var account = new Account(authDescriptor.Hash(), new List<AuthDescriptor> { authDescriptor }.ToArray(), session);
-        //     await account.Sync();
-        //     return account;
-        // }
+            if (account != null)
+            {
+                yield return account.Sync(null);
+                onSuccess(account);
+            }
+        }
 
         // public static byte[] RawRegisterTransaction(AuthDescriptor authDescriptor, AuthDescriptor ssoAuthDescriptor, BlockchainSession session)
         // {
@@ -154,162 +164,178 @@ namespace Chromia.Postchain.Ft3
         //     return tx.Raw();
         // }
 
-        // public static async Task<Account[]> GetByIds(List<byte[]> ids, BlockchainSession session)
-        // {
-        //     var accounts = new List<Account>();
-        //     foreach (var id in ids)
-        //     {
-        //         var account = await Account.GetById(id, session);
-        //         accounts.Add(account);
-        //     }
+        public static IEnumerator GetByIds(List<string> ids, BlockchainSession session, Action<Account[]> onSuccess)
+        {
+            var accounts = new List<Account>();
+            foreach (var id in ids)
+            {
+                yield return Account.GetById<Account>(id, session,
+                (Account account) =>
+                {
+                    accounts.Add(account);
+                });
+            }
 
-        //     return accounts.ToArray();
-        // }
+            onSuccess(accounts.ToArray());
+        }
 
-        // public static async Task<Account> GetById(byte[] id, BlockchainSession session)
-        // {
-        //     // var gtv = AccountQueries.AccountById(id);
-        //     (dynamic content, PostchainErrorControl control) account = await session.Query<dynamic>("ft3.get_account_by_id", ("id", Util.ByteArrayToString(id)));
+        public static IEnumerator GetById<T>(string id, BlockchainSession session, Action<Account> onSuccess)
+        {
+            Account account = null;
+            yield return session.Query<string>("ft3.get_account_by_id", new List<(string, object)>() { ("id", id) }.ToArray(),
+            (string _id) =>
+            {
+                account = new Account(_id, new List<AuthDescriptor>().ToArray(), session);
+            },
+            (string error) => { });
 
-        //     if (account.control.Error)
-        //     {
-        //         return null;
-        //     }
+            if (account != null)
+            {
+                yield return account.Sync(null);
+                onSuccess(account);
+            }
+        }
+        public IEnumerator AddAuthDescriptor<T>(AuthDescriptor authDescriptor, Action onSuccess)
+        {
+            yield return this.Session.Call<T>(AccountOperations.AddAuthDescriptor(
+                this.Id,
+                this.Session.User.AuthDescriptor.ID,
+                authDescriptor),
+                () =>
+                {
+                    this.AuthDescriptor.Add(authDescriptor);
+                    onSuccess();
+                }
+            );
+        }
+        public IEnumerator DeleteAllAuthDescriptorsExclude<T>(AuthDescriptor authDescriptor, Action onSuccess)
+        {
+            yield return this.Session.Call<T>(AccountOperations.DeleteAllAuthDescriptorsExclude(
+                this.Id,
+                authDescriptor.ID),
+                () =>
+                {
+                    this.AuthDescriptor.Clear();
+                    this.AuthDescriptor.Add(authDescriptor);
+                    onSuccess();
+                }
+            );
+        }
 
-        //     var acc = new Account(id, new List<AuthDescriptor>().ToArray(), session);
-        //     await acc.Sync();
-        //     return acc;
-        // }
+        public IEnumerator DeleteAuthDescriptor<T>(AuthDescriptor authDescriptor, Action onSuccess)
+        {
+            yield return this.Session.Call<T>(AccountOperations.DeleteAuthDescriptor(
+                this.Id,
+                this.Session.User.AuthDescriptor.ID,
+                authDescriptor.ID),
+                () => { }
+            );
 
-        // public async Task<PostchainErrorControl> AddAuthDescriptor(AuthDescriptor authDescriptor)
-        // {
-        //     var response = await this.Session.Call(AccountOperations.AddAuthDescriptor(
-        //         this.Id,
-        //         this.Session.User.AuthDescriptor.ID,
-        //         authDescriptor)
-        //     );
-        //     if (!response.Error)
-        //     {
-        //         this.AuthDescriptor.Add(authDescriptor);
-        //     }
-        //     return response;
-        // }
+            yield return SyncAuthDescriptors();
+            onSuccess();
+        }
 
-        // public async Task DeleteAllAuthDescriptorsExclude(AuthDescriptor authDescriptor)
-        // {
-        //     await this.Session.Call(AccountOperations.DeleteAllAuthDescriptorsExclude(
-        //         this.Id,
-        //         authDescriptor.ID)
-        //     );
-        //     this.AuthDescriptor.Clear();
-        //     this.AuthDescriptor.Add(authDescriptor);
-        // }
+        public IEnumerator Sync(Action onSuccess)
+        {
+            yield return SyncAssets();
+            yield return SyncAuthDescriptors();
+            yield return SyncRateLimit();
+        }
 
-        // public async Task<PostchainErrorControl> DeleteAuthDescriptor(AuthDescriptor authDescriptor)
-        // {
-        //     var opControl = await this.Session.Call(AccountOperations.DeleteAuthDescriptor(
-        //         this.Id,
-        //         this.Session.User.AuthDescriptor.ID,
-        //         authDescriptor.ID)
-        //     );
-        //     await this.SyncAuthDescriptors();
+        private IEnumerator SyncAssets()
+        {
+            yield return AssetBalance.GetByAccountId(this.Id, this.Session.Blockchain,
+                (AssetBalance[] balances) => { this.Assets = balances.ToList(); }
+            );
+        }
+        private IEnumerator SyncAuthDescriptors()
+        {
+            AuthDescriptorFactory.AuthDescriptorQuery[] authDescriptors = null;
 
-        //     return opControl;
-        // }
+            yield return this.Session.Query<AuthDescriptorFactory.AuthDescriptorQuery[]>("ft3.get_account_auth_descriptors", new List<(string, object)>() {
+                ("id", this.Id)
+            }.ToArray(),
+            (AuthDescriptorFactory.AuthDescriptorQuery[] authQuery) =>
+            {
+                authDescriptors = authQuery;
+            },
+            (string error) => { });
 
-        // public async Task Sync()
-        // {
-        //     await SyncAssets();
-        //     await SyncAuthDescriptors();
-        //     await SyncRateLimit();
-        // }
 
-        // private async Task SyncAssets()
-        // {
-        //     this.Assets = await AssetBalance.GetByAccountId(this.Id, this.Session.Blockchain);
-        // }
+            var authDescriptorFactory = new AuthDescriptorFactory();
+            List<AuthDescriptor> authList = new List<AuthDescriptor>();
 
-        // private async Task SyncAuthDescriptors()
-        // {
-        //     // var authGtv = AccountQueries.AccountAuthDescriptors(this.Id);
-        //     (dynamic content, PostchainErrorControl control) authDescriptors = await this.Session.Query<dynamic>("ft3.get_account_auth_descriptors", ("id", Util.ByteArrayToString(this.Id)));
+            foreach (var authDescriptor in authDescriptors)
+            {
+                authList.Add(
+                    authDescriptorFactory.Create(
+                        Util.StringToAuthType((string)authDescriptor.type),
+                        Util.HexStringToBuffer((string)authDescriptor.args)
+                    )
+                );
+            }
 
-        //     var authDescriptorFactory = new AuthDescriptorFactory();
-        //     List<AuthDescriptor> authList = new List<AuthDescriptor>();
+            this.AuthDescriptor = authList;
+        }
 
-        //     foreach (var authDescriptor in authDescriptors.content)
-        //     {
-        //         authList.Add(
-        //             authDescriptorFactory.Create(
-        //                 Util.StringToAuthType((string)authDescriptor["type"]),
-        //                 Util.HexStringToBuffer((string)authDescriptor["args"])
-        //             )
-        //         );
-        //     }
+        private IEnumerator SyncRateLimit()
+        {
+            yield return RateLimit.GetByAccountRateLimit(this.Id, this.Session.Blockchain,
+                (RateLimit rateLimit) => { this.RateLimit = rateLimit; }
+            );
+        }
 
-        //     this.AuthDescriptor = authList;
-        // }
+        public AssetBalance GetAssetById(string id)
+        {
+            return this.Assets.Find(assetBalance => assetBalance.Asset.Id.Equals(id));
+        }
 
-        // private async Task SyncRateLimit()
-        // {
-        //     this.RateLimit = await RateLimit.GetByAccountRateLimit(this.Id, this.Session.Blockchain);
-        // }
+        public IEnumerator TransferInputsToOutputs<T>(object[] inputs, object[] outputs, Action onSuccess)
+        {
+            yield return this.Session.Call<T>(AccountOperations.Transfer(inputs, outputs), onSuccess);
+            yield return this.SyncAssets();
+        }
 
-        // public AssetBalance GetAssetById(byte[] id)
-        // {
-        //     return this.Assets.Find(assetBalance => Util.ByteArrayToString(assetBalance.Asset.GetId()).Equals(Util.ByteArrayToString(id)));
-        // }
+        public IEnumerator Transfer<T>(string accountId, string assetId, long amount, Action onSuccess)
+        {
+            var input = new List<object>{
+                this.Id,
+                assetId,
+                this.Session.User.AuthDescriptor.ID,
+                amount,
+                new object[] {}
+            }.ToArray();
 
-        // public async Task<PostchainErrorControl> TransferInputsToOutputs(dynamic[] inputs, dynamic[] outputs)
-        // {
-        //     var transactionBuilder = this.GetBlockchain().CreateTransactionBuilder();
+            var output = new List<object>{
+                accountId,
+                assetId,
+                amount,
+                new object[] {}
+            }.ToArray();
 
-        //     transactionBuilder.AddOperation(AccountOperations.Transfer(inputs, outputs));
-        //     transactionBuilder.AddOperation(AccountOperations.Nop());
-        //     var tx = transactionBuilder.BuildAndSign(this.Session.User);
-        //     PostchainErrorControl opControl = await tx.Post();
-        //     await this.SyncAssets();
-        //     return opControl;
-        // }
+            yield return this.TransferInputsToOutputs<T>(
+                new List<object>() { input }.ToArray(),
+                new List<object>() { output }.ToArray(),
+                onSuccess
+            );
+        }
 
-        // public async Task<PostchainErrorControl> Transfer(byte[] accountId, byte[] assetId, int amount)
-        // {
-        //     var input = new List<dynamic>{
-        //         this.Id,
-        //         assetId,
-        //         this.Session.User.AuthDescriptor.ID,
-        //         amount,
-        //         new dynamic[] {}
-        //     }.ToArray();
+        public IEnumerator BurnTokens<T>(string assetId, long amount, Action onSuccess)
+        {
+            var input = new List<object>(){
+                this.Id,
+                assetId,
+                this.Session.User.AuthDescriptor.Hash(),
+                amount,
+                new object[] {}
+            }.ToArray();
 
-        //     var output = new List<dynamic>{
-        //         accountId,
-        //         assetId,
-        //         amount,
-        //         new dynamic[] {}
-        //     }.ToArray();
-
-        //     return await this.TransferInputsToOutputs(
-        //         new List<dynamic>() { input }.ToArray(),
-        //         new List<dynamic>() { output }.ToArray()
-        //     );
-        // }
-
-        // public async Task BurnTokens(byte[] assetId, int amount)
-        // {
-        //     var input = new List<dynamic>(){
-        //         this.Id,
-        //         assetId,
-        //         this.Session.User.AuthDescriptor.Hash(),
-        //         amount,
-        //         new dynamic[] {}
-        //     }.ToArray();
-
-        //     await this.TransferInputsToOutputs(
-        //         new List<dynamic>() { input }.ToArray(),
-        //         new List<dynamic>() { }.ToArray()
-        //     );
-        // }
+            yield return this.TransferInputsToOutputs<T>(
+                new List<object>() { input }.ToArray(),
+                new List<object>() { }.ToArray(),
+                onSuccess
+            );
+        }
 
         // public async Task<PaymentHistoryEntryShort[]> GetPaymentHistory()
         // {

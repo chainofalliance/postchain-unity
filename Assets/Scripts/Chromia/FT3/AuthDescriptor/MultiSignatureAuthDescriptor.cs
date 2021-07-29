@@ -14,7 +14,7 @@ namespace Chromia.Postchain.Ft3
 
         public MultiSignatureAuthDescriptor(List<byte[]> pubkeys, int signatureRequired, FlagsType[] flags, IAuthdescriptorRule rule = null)
         {
-            if(signatureRequired > pubkeys.Count)
+            if (signatureRequired > pubkeys.Count)
             {
                 throw new Exception("Number of required signatures have to be less or equal to number of pubkeys");
             }
@@ -35,17 +35,17 @@ namespace Chromia.Postchain.Ft3
             get => this.PubKeys;
         }
 
-        public byte[] ID
+        public string ID
         {
-            get => this.Hash();
+            get => Util.ByteArrayToString(this.Hash());
         }
 
         public IAuthdescriptorRule Rule
         {
             get => this.AuthRule;
         }
-        
-        public dynamic[] ToGTV()
+
+        public object[] ToGTV()
         {
             var hexPubs = new List<string>();
             foreach (var pubkey in this.PubKeys)
@@ -53,10 +53,10 @@ namespace Chromia.Postchain.Ft3
                 hexPubs.Add(Util.ByteArrayToString(pubkey));
             }
 
-            var gtv = new List<dynamic>(){
+            var gtv = new List<object>(){
                 Util.AuthTypeToString(AuthType.MultiSig),
                 hexPubs.ToArray(),
-                new List<dynamic>()
+                new List<object>()
                 {
                     this.Flags.ToGTV(),
                     this.SignatureRequired,
@@ -76,10 +76,10 @@ namespace Chromia.Postchain.Ft3
             }
 
 
-            var gtv = new List<dynamic>(){
+            var gtv = new List<object>(){
                 Util.AuthTypeToString(AuthType.MultiSig),
                 this.PubKeys.ToArray(),
-                new List<dynamic>()
+                new List<object>()
                 {
                     this.Flags.ToGTV(),
                     this.SignatureRequired,

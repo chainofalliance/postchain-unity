@@ -1,5 +1,7 @@
-using Chromia.Postchain.Client;
-using System.Threading.Tasks;
+using System.Collections;
+using System;
+
+using Chromia.Postchain.Client.Unity;
 
 namespace Chromia.Postchain.Ft3
 {
@@ -14,29 +16,36 @@ namespace Chromia.Postchain.Ft3
             this.Blockchain = blockchain;
         }
 
-        // public async Task<Account> GetAccountById(byte[] id)
-        // {
-        //     return await Account.GetById(id, this);
-        // }
+        public IEnumerator GetAccountById<T>(string id, Action<Account> onSuccess)
+        {
+            yield return Account.GetById<T>(id, this, onSuccess);
+        }
 
-        // public async Task<Account[]> GetAccountsByParticipantId(byte[] id)
-        // {
-        //     return await Account.GetByParticipantId(id, this);
-        // }
+        public IEnumerator GetAccountsByParticipantId(string id, Action<Account[]> onSuccess)
+        {
+            yield return Account.GetByParticipantId(id, this, onSuccess);
+        }
 
-        // public async Task<Account[]> GetAccountsByAuthDescriptorId(byte[] id)
-        // {
-        //     return await Account.GetByAuthDescriptorId(id, this);
-        // }
+        public IEnumerator GetAccountsByAuthDescriptorId(string id, Action<Account[]> onSuccess)
+        {
+            yield return Account.GetByAuthDescriptorId(id, this, onSuccess);
+        }
 
-        // public async Task<(T content, PostchainErrorControl control)> Query<T>(string name, params (string name, object content)[] queryObject)
-        // {
-        //     return await this.Blockchain.Query<T>(name, queryObject);
-        // }
+        public PostchainTransaction NewTransaction()
+        {
+            return this.Blockchain.Connection.NewTransaction(
+                new byte[][] { this.User.KeyPair.PubKey },
+                (string error) => { UnityEngine.Debug.Log(error); });
+        }
 
-        // public async Task<PostchainErrorControl> Call(Operation operation)
-        // {
-        //     return await this.Blockchain.Call(operation, this.User);
-        // }
+        public IEnumerator Query<T>(string queryName, (string name, object content)[] queryObject, Action<T> onSuccess, Action<string> onError)
+        {
+            return this.Blockchain.Query<T>(queryName, queryObject, onSuccess, onError);
+        }
+
+        public IEnumerator Call<T>(Operation operation, Action onSuccess)
+        {
+            return this.Blockchain.Call<T>(operation, this.User, onSuccess);
+        }
     }
 }

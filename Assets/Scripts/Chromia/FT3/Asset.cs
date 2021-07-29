@@ -1,72 +1,69 @@
 using Chromia.Postchain.Client;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Collections;
+using Newtonsoft.Json;
+using System;
 
 namespace Chromia.Postchain.Ft3
 {
     public class Asset
     {
+        public string Id;
         public string Name;
-        public byte[] ChainId;
 
-        public Asset(string name, byte[] chainId)
+        [JsonProperty(PropertyName = "issuing_chain_rid")]
+        public string IssuingChainRid;
+
+        public Asset(string name, string chainId)
         {
             this.Name = name;
-            this.ChainId = chainId;
+            this.IssuingChainRid = chainId;
+            this.Id = HashId();
         }
 
-        public byte[] GetId()
+        private string HashId()
         {
-            var body = new List<dynamic>() { this.Name, this.ChainId };
-            return PostchainUtil.HashGTV(body.ToArray());
+            var body = new List<object>() {
+                this.Name,
+                Util.HexStringToBuffer(this.IssuingChainRid)
+            };
+            var hash = PostchainUtil.HashGTV(body.ToArray());
+            return Util.ByteArrayToString(hash);
         }
 
-        // public static async Task<Asset> Register(string name, byte[] chainId, Blockchain blockchain)
-        // {
-        //     var tx = blockchain.Connection.Gtx.NewTransaction(new byte[][] {});
-        //     tx.AddOperation("ft3.dev_register_asset", name, Util.ByteArrayToString(chainId));
-        //     await tx.PostAndWaitConfirmation();
-        //     return new Asset(name, chainId);
-        // }
+        public static IEnumerator Register<T>(string name, string chainId, Blockchain blockchain, Action<Asset> onSuccess)
+        {
+            var request = blockchain.Connection.NewTransaction(new byte[][] { }, (string error) => { UnityEngine.Debug.Log(error); });
+            request.AddOperation("ft3.dev_register_asset", name, chainId);
+            yield return request.PostAndWait(
+                () =>
+                {
+                    onSuccess(
+                        new Asset(name, chainId)
+                    );
+                }
+            );
+        }
 
-        // public static async Task<Asset[]> GetByName(string name, Blockchain blockchain)
-        // {
-        //     var assets = await blockchain.Connection.Gtx.Query<dynamic>("ft3.get_asset_by_name", ("name", name));
-        //     List<Asset> assetList = new List<Asset>();
+        public static IEnumerator GetByName(string name, Blockchain blockchain, Action<Asset[]> onSuccess)
+        {
+            yield return blockchain.Query<Asset[]>("ft3.get_asset_by_name", new List<(string, object)>() { ("name", name) }.ToArray(),
+            (Asset[] assets) => { onSuccess(assets); },
+            (string error) => { });
+        }
 
-        //     foreach (var asset in assets.content)
-        //     {
-        //         assetList.Add(
-        //             new Asset(
-        //                 (string) asset["name"],
-        //                 Util.HexStringToBuffer((string) asset["issuing_chain_rid"])
-        //             )
-        //         );
-        //     }
-        //     return assetList.ToArray();
-        // }
+        public static IEnumerator GetById(string id, Blockchain blockchain, Action<Asset> onSuccess)
+        {
+            yield return blockchain.Query<Asset>("ft3.get_asset_by_id", new List<(string, object)>() { ("asset_id", id) }.ToArray(),
+            (Asset asset) => { onSuccess(asset); },
+            (string error) => { });
+        }
 
-        // public static async Task<Asset> GetById(byte[] id, Blockchain blockchain)
-        // {
-        //     var asset = await blockchain.Connection.Gtx.Query<dynamic>("ft3.get_asset_by_id", ("asset_id", Util.ByteArrayToString(id)));
-        //     return new Asset((string) asset.content["name"], Util.HexStringToBuffer((string) asset.content["issuing_chain_rid"]));
-        // }
-
-        // public static async Task<Asset[]> GetAssets(Blockchain blockchain)
-        // {
-        //     var assets = await blockchain.Connection.Gtx.Query<dynamic>("ft3.get_all_assets");
-        //     List<Asset> assetList = new List<Asset>();
-
-        //     foreach (var asset in assets.content)
-        //     {
-        //         assetList.Add(
-        //             new Asset(
-        //                 (string) asset["name"],
-        //                 Util.HexStringToBuffer((string) asset["issuing_chain_rid"])
-        //             )
-        //         );
-        //     }
-        //     return assetList.ToArray();
-        // }
+        public static IEnumerator GetAssets(Blockchain blockchain, Action<Asset[]> onSuccess)
+        {
+            yield return blockchain.Query<Asset[]>("ft3.get_all_assets", new List<(string, object)>().ToArray(),
+            (Asset[] assets) => { onSuccess(assets); },
+            (string error) => { });
+        }
     }
 }

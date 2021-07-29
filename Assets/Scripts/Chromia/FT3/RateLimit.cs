@@ -1,5 +1,6 @@
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Collections;
+using Newtonsoft.Json;
 using System;
 
 namespace Chromia.Postchain.Ft3
@@ -7,6 +8,7 @@ namespace Chromia.Postchain.Ft3
     public class RateLimit
     {
         public int Points;
+        [JsonProperty(PropertyName = "last_update")]
         public int LastUpgrade;
 
         public RateLimit(int points, int lastUpgrade)
@@ -20,55 +22,65 @@ namespace Chromia.Postchain.Ft3
             return Points;
         }
 
-        // public static async Task ExecFreeOperation(byte[] accountID, Blockchain blockchain)
-        // {
-        //     var txBuilder = blockchain.CreateTransactionBuilder();
-        //     txBuilder.AddOperation(AccountDevOperations.FreeOp(accountID));
-        //     txBuilder.AddOperation(AccountOperations.Nop());
-        //     var tx = txBuilder.Build(new List<byte[]>());
-        //     await tx.Post();
-        // }
+        public static IEnumerator ExecFreeOperation(string accountID, Blockchain blockchain, Action onSuccess)
+        {
+            var op = AccountDevOperations.FreeOp(accountID);
 
-        // public static async Task<RateLimit> GetByAccountRateLimit(byte[] accountID, Blockchain blockchain)
-        // {
-        //     var rateInfo = await blockchain.Connection.Gtx.Query<RateLimit>("ft3.get_account_rate_limit", ("account_id", Util.ByteArrayToString(accountID)));
+            var request = blockchain.Connection.NewTransaction(new byte[][] { }, (string error) => { UnityEngine.Debug.Log(error); });
+            request.AddOperation(op.Name, op.Args);
+            yield return request.PostAndWait(onSuccess);
+        }
 
-        //     if (rateInfo.control.Error)
-        //     {
-        //         return null;
-        //     }
+        public static IEnumerator GetByAccountRateLimit(string id, Blockchain blockchain, Action<RateLimit> onSuccess)
+        {
+            yield return blockchain.Query<RateLimit>("ft3.get_account_rate_limit",
+                new List<(string, object)>() { ("account_id", id) }.ToArray(),
+                onSuccess,
+                (string error) => { }
+            );
+        }
 
-        //     return rateInfo.content;
-        // }
+        public static IEnumerator GivePoints(string accountID, int points, Blockchain blockchain, Action onSuccess)
+        {
+            var op = AccountDevOperations.GivePoints(accountID, points);
 
-        // public static async Task GivePoints(byte[] accountID, int points, Blockchain blockchain)
-        // {
-        //     var txBuilder = blockchain.CreateTransactionBuilder();
-        //     txBuilder.AddOperation(AccountDevOperations.GivePoints(accountID, points));
-        //     txBuilder.AddOperation(AccountOperations.Nop());
-        //     var tx = txBuilder.Build(new List<byte[]>());
-        //     await tx.Post();
-        // }
+            var request = blockchain.Connection.NewTransaction(new byte[][] { }, (string error) => { UnityEngine.Debug.Log(error); });
+            request.AddOperation(op.Name, op.Args);
+            yield return request.PostAndWait(onSuccess);
+        }
 
-        // public static async Task<long> GetLastTimestamp(Blockchain blockchain)
-        // {
-        //     var ts = await blockchain.Connection.Gtx.Query<long>("ft3.get_last_timestamp");
-        //     return ts.content;
-        // }
+        public static IEnumerator GetLastTimestamp(Blockchain blockchain, Action<long> onSuccess)
+        {
+            yield return blockchain.Query<long>("ft3.get_last_timestamp",
+                new List<(string, object)>().ToArray(),
+                onSuccess,
+                (string error) => { }
+            );
+        }
 
-        // public static async Task<int> GetPointsAvailable(int points, int lastOperation, Blockchain blockchain)
-        // {
-        //     var maxCount = blockchain.Info.RequestMaxCount;
-        //     var recoveryTime = blockchain.Info.RequestRecoveryTime;
-        //     var lastTimestamp = await GetLastTimestamp(blockchain);
-        //     decimal delta = lastTimestamp - lastOperation;
+        public static IEnumerator GetPointsAvailable(int points, int lastOperation, Blockchain blockchain, Action<int> onSuccess)
+        {
+            var maxCount = blockchain.Info.RequestMaxCount;
+            var recoveryTime = blockchain.Info.RequestRecoveryTime;
+            var lastTimestamp = 0L;
 
-        //     var pointsAvailable = (int)Math.Floor(delta / recoveryTime) + points;
-        //     if (pointsAvailable > maxCount)
-        //     {
-        //         return maxCount;
-        //     }
-        //     return pointsAvailable > 0 ? pointsAvailable : 0;
-        // }
+            yield return GetLastTimestamp(blockchain, (long _lastTimeStamp) => { lastTimestamp = _lastTimeStamp; });
+            decimal delta = lastTimestamp - lastOperation;
+
+            var pointsAvailable = (int)Math.Floor(delta / recoveryTime) + points;
+            if (pointsAvailable > maxCount)
+            {
+                onSuccess(maxCount);
+            }
+
+            if (pointsAvailable > 0)
+            {
+                onSuccess(pointsAvailable);
+            }
+            else
+            {
+                onSuccess(0);
+            }
+        }
     }
 }

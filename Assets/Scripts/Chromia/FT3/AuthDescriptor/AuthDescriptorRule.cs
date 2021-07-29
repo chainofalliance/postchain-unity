@@ -2,8 +2,9 @@ using System.Collections.Generic;
 
 namespace Chromia.Postchain.Ft3
 {
-    public interface IAuthdescriptorRule{
-        dynamic[] ToGTV();
+    public interface IAuthdescriptorRule
+    {
+        object[] ToGTV();
     };
 
     public class Rules
@@ -82,10 +83,10 @@ namespace Chromia.Postchain.Ft3
             return new RuleCompositeExpressionOperator(this, "and");
         }
 
-        public dynamic[] ToGTV()
+        public object[] ToGTV()
         {
-            var gtv = new List<dynamic>(){
-                Name, 
+            var gtv = new List<object>(){
+                Name,
                 Operator,
                 Value
             };
@@ -133,7 +134,7 @@ namespace Chromia.Postchain.Ft3
             Name = name;
             Operator = op;
         }
-        
+
         public RuleCompositeExpression LessThan(long value)
         {
             return this.CompositeExpression("lt", value);
@@ -183,9 +184,9 @@ namespace Chromia.Postchain.Ft3
             return new RuleCompositeExpressionOperator(this, "and");
         }
 
-        public dynamic[] ToGTV()
+        public object[] ToGTV()
         {
-            var gtv = new List<dynamic>(){
+            var gtv = new List<object>(){
                 Left.ToGTV(),
                 Operator,
                 Right.ToGTV()
