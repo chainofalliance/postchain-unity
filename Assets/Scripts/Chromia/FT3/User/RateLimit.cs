@@ -60,8 +60,8 @@ namespace Chromia.Postchain.Ft3
 
         public static IEnumerator GetPointsAvailable(int points, int lastOperation, Blockchain blockchain, Action<int> onSuccess)
         {
-            var maxCount = blockchain.Info.RequestMaxCount;
-            var recoveryTime = blockchain.Info.RequestRecoveryTime;
+            var maxCount = blockchain.Info.RateLimitInfo.MaxPoints;
+            var recoveryTime = blockchain.Info.RateLimitInfo.RecoveryTime;
             var lastTimestamp = 0L;
 
             yield return GetLastTimestamp(blockchain, (long _lastTimeStamp) => { lastTimestamp = _lastTimeStamp; });

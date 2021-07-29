@@ -45,11 +45,7 @@ namespace Chromia.Postchain.Ft3
             (BlockchainInfo info) =>
             {
                 blockchain = new Blockchain(blockchainRID, info, connection, directoryService);
-            },
-            (string error) =>
-            {
-                blockchain = new Blockchain(blockchainRID, new BlockchainInfo(connection.BlockchainRID, null, null, 0, 0), connection, directoryService);
-            });
+            }, onError);
 
             onSuccess(blockchain);
         }
@@ -98,8 +94,8 @@ namespace Chromia.Postchain.Ft3
 
         public IEnumerator IsLinkedWithChain(string chainId, Action<bool> onSuccess)
         {
-            yield return this.Query<bool>("ft3.xc.is_linked_with_chain", new List<(string, object)>() { ("chain_rid", chainId) }.ToArray(),
-            (bool is_linked) => { onSuccess(is_linked); },
+            yield return this.Query<int>("ft3.xc.is_linked_with_chain", new List<(string, object)>() { ("chain_rid", chainId) }.ToArray(),
+            (int is_linked) => { onSuccess(is_linked == 1); },
             (string error) => { });
         }
 

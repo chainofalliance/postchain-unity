@@ -63,16 +63,13 @@ namespace Chromia.Postchain.Ft3
         {
             get;
         }
-        List<byte[]> PubKey
-        {
-            get;
-        }
         byte[] Hash();
         object[] ToGTV();
     }
 
     public class Account
     {
+        // readonly paymentHistorySyncManager = new PaymentHistorySyncManager();
         public readonly string Id;
         public List<AuthDescriptor> AuthDescriptor;
         public List<AssetBalance> Assets = new List<AssetBalance>();
@@ -106,11 +103,7 @@ namespace Chromia.Postchain.Ft3
             },
             (string error) => { });
 
-            yield return Account.GetByIds(accountIDs, session,
-            (Account[] accounts) =>
-            {
-                onSuccess(accounts);
-            });
+            yield return Account.GetByIds(accountIDs, session, onSuccess);
         }
 
         public static IEnumerator GetByAuthDescriptorId(string id, BlockchainSession session, Action<Account[]> onSuccess)
@@ -123,11 +116,7 @@ namespace Chromia.Postchain.Ft3
             },
             (string error) => { });
 
-            yield return Account.GetByIds(accountIDs, session,
-            (Account[] accounts) =>
-            {
-                onSuccess(accounts);
-            });
+            yield return Account.GetByIds(accountIDs, session, onSuccess);
         }
 
         public static IEnumerator Register<T>(AuthDescriptor authDescriptor, BlockchainSession session, Action<Account> onSuccess)
@@ -145,7 +134,7 @@ namespace Chromia.Postchain.Ft3
 
             if (account != null)
             {
-                yield return account.Sync(null);
+                yield return account.Sync(() => { });
                 onSuccess(account);
             }
         }
@@ -162,6 +151,27 @@ namespace Chromia.Postchain.Ft3
         //     var tx = txBuilder.Build(signers);
         //     tx.Sign(session.User.KeyPair);
         //     return tx.Raw();
+        // }
+        // JS
+        // static rawTransactionRegister(user: User, authDescriptor: AuthDescriptor, blockchain: Blockchain) : Buffer {
+        // return blockchain.transactionBuilder()
+        //     .add(register(user.authDescriptor))
+        //     .add(addAuthDescriptor(user.authDescriptor.id, user.authDescriptor.id, authDescriptor))
+        //     .build([user.authDescriptor.signers, authDescriptor.signers].flat())
+        //     .sign(user.keyPair)
+        //     .raw()
+        // }
+        // static rawTransactionAddAuthDescriptor(
+        // accountId: Buffer,
+        // user: User,
+        // authDescriptor: AuthDescriptor,
+        // blockchain: Blockchain
+        // ): Buffer {
+        //     return blockchain.transactionBuilder()
+        //         .add(addAuthDescriptor(accountId, user.authDescriptor.id, authDescriptor))
+        //         .build([user.authDescriptor.signers , authDescriptor.signers].flat())
+        //         .sign(user.keyPair)
+        //         .raw()
         // }
 
         public static IEnumerator GetByIds(List<string> ids, BlockchainSession session, Action<Account[]> onSuccess)
@@ -208,6 +218,19 @@ namespace Chromia.Postchain.Ft3
                 }
             );
         }
+
+        public IEnumerator IsAuthDescriptorValid(string id, Action<bool> onSuccess)
+        {
+            yield return Session.Query<bool>("ft3.is_auth_descriptor_valid",
+                new (string, object)[] { ("account_id", this.Id), ("auth_descriptor_id", id) },
+                onSuccess,
+                (string error) =>
+                {
+                    UnityEngine.Debug.Log(error);
+                }
+            );
+        }
+
         public IEnumerator DeleteAllAuthDescriptorsExclude<T>(AuthDescriptor authDescriptor, Action onSuccess)
         {
             yield return this.Session.Call<T>(AccountOperations.DeleteAllAuthDescriptorsExclude(
@@ -228,11 +251,12 @@ namespace Chromia.Postchain.Ft3
                 this.Id,
                 this.Session.User.AuthDescriptor.ID,
                 authDescriptor.ID),
-                () => { }
+                () =>
+                {
+                    SyncAuthDescriptors();
+                    onSuccess();
+                }
             );
-
-            yield return SyncAuthDescriptors();
-            onSuccess();
         }
 
         public IEnumerator Sync(Action onSuccess)

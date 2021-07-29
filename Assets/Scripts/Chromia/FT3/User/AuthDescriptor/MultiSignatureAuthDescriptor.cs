@@ -30,11 +30,6 @@ namespace Chromia.Postchain.Ft3
             get => this.PubKeys;
         }
 
-        public List<byte[]> PubKey
-        {
-            get => this.PubKeys;
-        }
-
         public string ID
         {
             get => Util.ByteArrayToString(this.Hash());
