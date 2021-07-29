@@ -127,21 +127,18 @@ namespace Chromia.Postchain.Client
             var oldSignatures = this.Signatures;
             this.Signatures.Clear();
 
-            var encodedBuffer = Gtv.Hash(GetGtvTxBody(true));
+            var encodedBuffer = Gtv.Hash(GetGtvTxBody());
 
             this.Signatures = oldSignatures;
 
             return encodedBuffer;
         }
 
-        private object[] GetGtvTxBody(bool operationsRaw)
+        private object[] GetGtvTxBody()
         {
             var body = new List<object>();
             body.Add(PostchainUtil.HexStringToBuffer(this.BlockchainID));
-            if (operationsRaw)
-                body.Add((from Operation op in this.Operations select op.Raw()).ToArray());
-            else
-                body.Add(this.Operations.ToArray());
+            body.Add((from Operation op in this.Operations select op.Raw()).ToArray());
             body.Add(this.Signers.ToArray());
 
             return body.ToArray();
@@ -171,7 +168,6 @@ namespace Chromia.Postchain.Client
 
         public string Serialize()
         {
-            
             return PostchainUtil.ByteArrayToString(Encode());
         }
 
@@ -179,7 +175,7 @@ namespace Chromia.Postchain.Client
         {
             var gtxBody = new List<object>();
 
-            gtxBody.Add(GetGtvTxBody(false));
+            gtxBody.Add(GetGtvTxBody());
             gtxBody.Add(this.Signatures.ToArray());
 
             return Gtx.ArgToGTXValue(gtxBody.ToArray()).Encode();
