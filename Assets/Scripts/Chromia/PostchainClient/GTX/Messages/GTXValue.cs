@@ -39,6 +39,7 @@ namespace Chromia.Postchain.Client
                 
                 return this.Choice.Equals(gtxValue.Choice) 
                     && ((this.ByteArray == null || gtxValue.ByteArray == null) ? this.ByteArray == gtxValue.ByteArray : Enumerable.SequenceEqual(this.ByteArray, gtxValue.ByteArray))
+                    && ((this.String == null || gtxValue.String == null) ? this.String == gtxValue.String : this.String.Equals(gtxValue.String))
                     && this.Integer.Equals(gtxValue.Integer)
                     && ((this.Dict == null || gtxValue.Dict == null) ? this.Dict == gtxValue.Dict : Enumerable.SequenceEqual(this.Dict, gtxValue.Dict))
                     && ((this.Array == null || gtxValue.Array == null) ? this.Array == gtxValue.Array : Enumerable.SequenceEqual(this.Array, gtxValue.Array));
@@ -150,7 +151,9 @@ namespace Chromia.Postchain.Client
         {
             var val = new GTXValue();
 
-            switch (sequence.PeekTag())
+            byte choice = sequence.ReadChoice();
+            sequence.ReadLength();
+            switch (choice)
             {
                 case ASN1.AsnUtil.TAG_NULL:
                 {
@@ -196,6 +199,10 @@ namespace Chromia.Postchain.Client
                         val.Dict.Add(DictPair.Decode(innerSequence));
                     }
                     break;
+                }
+                default:
+                {
+                    throw new System.Exception("Unknown choice tag: " + choice.ToString("X2"));
                 }
             }
 
@@ -268,98 +275,6 @@ namespace Chromia.Postchain.Client
             return retArr.ToArray();
         }
 
-        [Obsolete("Use ASN1Writer.GetEncodedLength() instead")]
-        private static byte GetValueSize(GTXValue gtxValue)
-        {
-            switch (gtxValue.Choice)
-            {
-                case (GTXValueChoice.ByteArray):
-                {
-                    byte size = (byte) (gtxValue.ByteArray.Length + 2);
-                    if (size > 127)
-                    {
-                        size += 1;
-                    }
-                    
-                    return size;
-                }
-                case (GTXValueChoice.String):
-                {
-                    byte size = (byte) (gtxValue.String.Length + 2);
-                    if (size > 127)
-                    {
-                        size += 1;
-                    }
-                    
-                    return size;
-                }
-                case (GTXValueChoice.Integer):
-                {       
-                    byte size = (byte) (PostchainUtil.GetMaxAmountOfBytesForInteger(gtxValue.Integer) + 2);
-                    if (size > 127)
-                    {
-                        size += 1;
-                    }
-                    
-                    return size;
-                }
-                case (GTXValueChoice.Array):
-                {
-                    byte choiceSize = (byte) 2;
-
-                    foreach (var val in gtxValue.Array)
-                    {
-                        var tmpSize = GetValueSize(val);
-
-                        if (tmpSize > 127)
-                        {
-                            choiceSize += (byte) (tmpSize + 3);
-                        }
-                        else
-                        {
-                            choiceSize += (byte) (tmpSize + 2);
-                        }
-                    }
-                    
-                    if (choiceSize > 127)
-                    {
-                        choiceSize += 1;
-                    }
-
-                    return choiceSize;
-                }
-                case (GTXValueChoice.Dict):
-                {
-                    byte choiceSize = (byte) 2;
-
-                    foreach (var val in gtxValue.Dict)
-                    {
-                        var tmpSize = (byte) ((val.Name.Length + 2) + GetValueSize(val.Value));
-
-                        if (tmpSize > 127)
-                        {
-                            choiceSize += (byte) (tmpSize + 5);
-                        }
-                        else
-                        {
-                            choiceSize += (byte) (tmpSize + 4);
-                        }
-                    }
-
-                    if (choiceSize > 127)
-                    {
-                        choiceSize += 1;
-                    }
-
-                    return choiceSize;
-                }
-                default:
-                {
-                    throw new System.Exception("Chromia.PostchainClient.GTX.Messages GTXValue.GetValueSize() GTXValueChoice.Default case. Unknown choice " + gtxValue.Choice);
-                }
-            }
-        }
-
         public override string ToString()
         {
             switch (Choice)
@@ -370,7 +285,7 @@ namespace Chromia.Postchain.Client
                 }
                 case (GTXValueChoice.ByteArray):
                 {
-                    return PostchainUtil.ByteArrayToString(ByteArray);
+                    return "0x" + PostchainUtil.ByteArrayToString(ByteArray);
                 }
                 case (GTXValueChoice.String):
                 {

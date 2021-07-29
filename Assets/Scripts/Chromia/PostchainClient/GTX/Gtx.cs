@@ -7,10 +7,10 @@ namespace Chromia.Postchain.Client
 
     public class Gtx
     {
-        private string BlockchainID;
-        private List<Operation> Operations;
-        private List<byte[]> Signers;
-        private List<byte[]> Signatures;
+        public string BlockchainID {get; private set;}
+        public List<Operation> Operations {get; private set;}
+        public List<byte[]> Signers {get; private set;}
+        public List<byte[]> Signatures {get; private set;}
 
         public Gtx(string blockchainRID): this()
         {
@@ -106,7 +106,7 @@ namespace Chromia.Postchain.Client
 
         public void AddSignerToGtx(byte[] signer)
         {
-            if(this.Signers.Count != 0)
+            if(this.Signatures.Count != 0)
             {
                 throw new Exception("Cannot add signers to an already signed gtx");
             }
@@ -125,8 +125,6 @@ namespace Chromia.Postchain.Client
         public byte[] GetBufferToSign()
         {
             var oldSignatures = this.Signatures;
-            this.Signatures.Clear();
-
             var encodedBuffer = Gtv.Hash(GetGtvTxBody());
 
             this.Signatures = oldSignatures;
@@ -154,9 +152,6 @@ namespace Chromia.Postchain.Client
                 }
             }
 
-            if (this.Signers.Count != this.Signatures.Count) {
-                throw new Exception("Mismatching signers and signatures");
-            } 
             var signerIndex = this.Signers.FindIndex(signer => signer.SequenceEqual(pubKeyBuffer));
 
             if (signerIndex == -1) {
@@ -185,27 +180,28 @@ namespace Chromia.Postchain.Client
         {
             var gtx = new Gtx();
             var gtxTransaction = new ASN1.AsnReader(encodedMessage);
-            // var gtxValues = gtxTransaction.ReadArray();
+            var gtxValue = GTXValue.Decode(gtxTransaction);
+            var gtxPayload = gtxValue.Array[0];
 
-            var bridSequence = gtxTransaction.ReadSequence();
-            gtx.BlockchainID = bridSequence.ReadUTF8String();
+            gtx.BlockchainID = PostchainUtil.ByteArrayToString(gtxPayload.Array[0].ByteArray);
 
-            var operationSequence = gtxTransaction.ReadSequence();
-            while (operationSequence.RemainingBytes > 0)
+            foreach (var opArr in gtxPayload.Array[1].Array)
             {
-                gtx.Operations.Add(Operation.Decode(operationSequence));
+                var op = opArr.ToObjectArray();
+
+                var opName = opArr.Array[0].String;
+                var opArgs = opArr.Array[1].ToObjectArray();
+                gtx.AddOperationToGtx(opName, opArgs);
             }
 
-            var signerSequence = gtxTransaction.ReadSequence();
-            while (signerSequence.RemainingBytes > 0)
+            foreach (var signer in gtxPayload.Array[2].Array)
             {
-                gtx.Signers.Add(signerSequence.ReadOctetString());
+                gtx.AddSignerToGtx(signer.ByteArray);
             }
 
-            var signatureSequence = gtxTransaction.ReadSequence();
-            while (signatureSequence.RemainingBytes > 0)
+            foreach (var sig in gtxValue.Array[1].Array)
             {
-                gtx.Signatures.Add(signatureSequence.ReadOctetString());
+                gtx.Signatures.Add(sig.ByteArray);
             }
 
             return gtx;
@@ -239,32 +235,6 @@ namespace Chromia.Postchain.Client
             {
                 return 1;
             }
-        }
-
-        public override bool Equals(object obj)
-        {
-            if(this == obj)
-            {
-                return true;
-            }
-            if(! this.GetType().Equals(obj.GetType()))
-            {
-                return false;
-            }
-
-            Gtx p = (Gtx) obj;
-            return this.BlockchainID == p.BlockchainID
-                && Enumerable.SequenceEqual(this.Operations, p.Operations)
-                && Enumerable.SequenceEqual(this.Signers, p.Signers)
-                && Enumerable.SequenceEqual(this.Signatures, p.Signatures);
-        }
-
-        public override int GetHashCode()
-        {
-            return BlockchainID.GetHashCode()
-                + Operations.GetHashCode()
-                + Signers.GetHashCode()
-                + Signatures.GetHashCode();
         }
     }
 }

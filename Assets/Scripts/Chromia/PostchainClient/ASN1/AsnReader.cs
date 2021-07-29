@@ -1,39 +1,37 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 
 namespace Chromia.Postchain.Client.ASN1
 {
     public class AsnReader
     {
-        public int RemainingBytes {get {return _length - _readBytes;}}
+        public int RemainingBytes {get {return _bytes.Count;}}
 
-        private Stack<byte> _bytes;
+        private List<byte> _bytes;
         private List<AsnReader> _sequences;
-        private int _length = -1;
         private int _readBytes = 0;
 
         public AsnReader(byte[] bytes)
         {
-            this._bytes = new Stack<byte>(bytes);
-        }
-        public AsnReader(ref Stack<byte> bytes, int length)
-        {
-            this._bytes = new Stack<byte>(bytes);
-            this._length = length;
+            this._bytes = new List<byte>(bytes);
         }
 
-        public byte PeekTag()
+        public byte ReadChoice()
         {
-            return _bytes.Peek();
+            return GetByte();
         }
 
         public AsnReader ReadSequence()
         {
             GetByte(0x30);
+            
             var length = ReadLength();
+        	var sequence = this._bytes.Take(length).ToArray();
+            this._bytes.RemoveRange(0, length);
 
-            return new AsnReader(ref this._bytes, length);
+            return new AsnReader(sequence);
         }
 
         public byte[] ReadOctetString()
@@ -67,18 +65,11 @@ namespace Chromia.Postchain.Client.ASN1
         public int ReadInteger()
         {
             GetByte(0x02);
-            var length = ReadLength();
 
-            var buffer = new List<byte>();
-            for (int i = 0; i < length; i++)
-            {
-                buffer.Add(GetByte());
-            }
-
-            return BitConverter.ToInt32(buffer.ToArray(), 0);
+            return ReadIntegerInternal(ReadLength());
         }
 
-        private int ReadLength()
+        public int ReadLength()
         {
             var first = GetByte();
 
@@ -88,36 +79,43 @@ namespace Chromia.Postchain.Client.ASN1
             }
             else
             {
-                var byteAmount = first - 0x80;
-                var bytes = new List<byte>();
-                for (int i = 0; i < byteAmount; i++)
-                {
-                    bytes.Add(GetByte());
-                }
-
-                return BitConverter.ToInt32(bytes.ToArray(), 0);
+                return ReadIntegerInternal(first - 0x80, true);
             }
+        }
+
+        private int ReadIntegerInternal(int byteAmount, bool onlyPositive = false)
+        {
+            var buffer = new List<byte>();
+            for (int i = 0; i < 4; i++)
+            {
+                if (i < byteAmount)
+                    buffer.Add(GetByte());
+                else
+                    buffer.Insert(0, (byte) ((buffer[byteAmount-1] >= 0x80) && !onlyPositive ? 0xff : 0x00));
+            }
+
+            if (BitConverter.IsLittleEndian)
+                buffer.Reverse();
+
+            return BitConverter.ToInt32(buffer.ToArray(), 0);
         }
 
         private byte GetByte(byte? expected = null)
         {
-            if (_length > 0 && _readBytes >= _length)
-            {
-                throw new System.Exception("Tried to read more bytes than allowed");
-            }
-            else if (_bytes.Count == 0)
+            if (_bytes.Count == 0)
             {
                 throw new System.Exception("No bytes left to read");
             }
 
-            var got = _bytes.Peek();
-            if (expected != got)
+            var got = _bytes[0];
+            if (expected != null && expected.Value != got)
             {
-                throw new System.Exception("Expected byte " + expected + ", got " + got);
+                throw new System.Exception("Expected byte " + expected.Value.ToString("X2") + ", got " + got.ToString("X2"));
             }
 
             _readBytes++;
-            return  _bytes.Pop();
+            _bytes.RemoveAt(0);
+            return  got;
         }
     }
 }

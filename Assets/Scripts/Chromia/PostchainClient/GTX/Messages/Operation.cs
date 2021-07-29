@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Chromia.Postchain.Client
 {
-    internal class Operation
+    public class Operation
     {
         public string OpName;
         public List<GTXValue> Args;
@@ -36,7 +36,9 @@ namespace Chromia.Postchain.Client
                 Operation gtxOperation = (Operation) obj;
                 
                 return this.OpName.Equals(gtxOperation.OpName)
-                    && ((this.Args == null || gtxOperation.Args == null) ? this.Args == gtxOperation.Args : Enumerable.SequenceEqual(this.Args, gtxOperation.Args));
+                    && ((this._rawArgs == null || gtxOperation._rawArgs == null) 
+                        ? this._rawArgs == gtxOperation._rawArgs 
+                        : this._rawArgs.SequenceEqual(gtxOperation._rawArgs));
             }   
         }
 
