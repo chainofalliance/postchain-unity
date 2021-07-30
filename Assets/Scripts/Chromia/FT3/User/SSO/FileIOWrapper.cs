@@ -6,9 +6,6 @@ namespace Chromia.Postchain.Ft3
     {
 #if UNITY_WEBGL
         [DllImport("__Internal")]
-        private static extern void LogBrowser(string data);
-
-        [DllImport("__Internal")]
         private static extern void SaveToLocalStorage(string key, string value);
 
         [DllImport("__Internal")]
@@ -20,11 +17,6 @@ namespace Chromia.Postchain.Ft3
         [DllImport("__Internal")]
         private static extern int HasKeyInLocalStorage(string key);
 #endif
-
-        public static void LogToBrowser(string data)
-        {
-            LogBrowser(data);
-        }
 
         public static void DeleteKey(string key)
         {

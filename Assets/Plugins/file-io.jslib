@@ -1,9 +1,5 @@
 mergeInto(LibraryManager.library, {
 
-  LogBrowser : function(data) {
-    window.alert(Pointer_stringify(data));
-  },
-
   SaveToLocalStorage : function(key, data) {
     localStorage.setItem(Pointer_stringify(key), Pointer_stringify(data));
   },

@@ -1,7 +1,10 @@
 using System;
+using System.Web;
 using System.Text;
 using System.Collections;
-using System.Web;
+
+using Chromia.Postchain.Client;
+using Chromia.Postchain.Client.Unity;
 
 namespace Chromia.Postchain.Ft3
 {
@@ -31,7 +34,7 @@ namespace Chromia.Postchain.Ft3
             set { _vaultUrl = value; }
         }
 
-        private IEnumerator GetAccountAndUserByStoredIds<T>(Action<(Account, User)> onSuccess)
+        private IEnumerator GetAccountAndUserByStoredIds(Action<(Account, User)> onSuccess)
         {
             var keyPair = this.Store.KeyPair;
             var accountID = this.Store.AccountID;
@@ -48,7 +51,7 @@ namespace Chromia.Postchain.Ft3
             );
 
             Account account = null;
-            yield return this.Blockchain.NewSession(user).GetAccountById<T>(accountID,
+            yield return this.Blockchain.NewSession(user).GetAccountById(accountID,
                 (Account _account) =>
                 {
                     account = _account;
@@ -64,7 +67,7 @@ namespace Chromia.Postchain.Ft3
             Account account = null;
             User user = null;
 
-            yield return GetAccountAndUserByStoredIds<T>(
+            yield return GetAccountAndUserByStoredIds(
                 ((Account, User) au) =>
                 {
                     account = au.Item1;
@@ -99,7 +102,7 @@ namespace Chromia.Postchain.Ft3
 
         }
 
-        public IEnumerator PendingSSO(Action<(Account, User)> onSuccess)
+        public IEnumerator PendingSSO(Action<(Account, User)> onSuccess, Action onDiscard)
         {
             var url = UnityEngine.Application.absoluteURL;
             var uri = new Uri(url);
@@ -109,8 +112,11 @@ namespace Chromia.Postchain.Ft3
 
             if (tx != null)
             {
+                UnityEngine.Debug.Log(tx);
                 yield return FinalizeLogin(tx, onSuccess);
             }
+
+            onDiscard();
         }
 
         public IEnumerator FinalizeLogin(string tx, Action<(Account, User)> onSuccess)
@@ -132,18 +138,47 @@ namespace Chromia.Postchain.Ft3
                 authDescriptor
             );
 
-            // tx FROM RAW Sign
-            // validateTransaction(transaction, keyPair.pubKey);
-            // post tx
+            var gtx = PostchainUtil.DeserializeGTX(Util.HexStringToBuffer(tx));
+            gtx.Sign(keyPair.PrivKey, keyPair.PubKey);
 
-            // let accountId = getAccountId(transaction);
+            var connection = this.Blockchain.Connection;
+            var postchainTransaction = new PostchainTransaction(gtx, connection.BaseUrl, connection.BlockchainRID,
+            (string error) => { UnityEngine.Debug.Log(error); });
 
-            // this.store.accountId = accountId;
+            bool isSuccess = false;
+            yield return postchainTransaction.PostAndWait(() =>
+            {
+                UnityEngine.Debug.Log("Success");
+                isSuccess = true;
+            });
 
-            // const account = await this.blockchain.newSession(user).getAccountById(accountId);
+            if (isSuccess)
+            {
+                var accountID = GetAccountId(gtx);
+                this.Store.AccountID = accountID;
 
-            // return [account, user];
-            yield return null;
+                Account account = null;
+                yield return this.Blockchain.NewSession(user).GetAccountById(accountID, (Account _account) => account = _account);
+
+                onSuccess((account, user));
+            }
+        }
+
+        private string GetAccountId(Gtx gtx)
+        {
+            var ops = gtx.Operations;
+            if (ops.Count == 1)
+            {
+                return ops[0].Args[0].String;
+            }
+            else if (ops.Count == 2)
+            {
+                return ops[1].Args[0].String;
+            }
+            else
+            {
+                throw new Exception("Invalid sso transaction");
+            }
         }
 
         public IEnumerator Logout<T>()
@@ -151,7 +186,7 @@ namespace Chromia.Postchain.Ft3
             Account account = null;
             User user = null;
 
-            yield return GetAccountAndUserByStoredIds<T>(
+            yield return GetAccountAndUserByStoredIds(
                 ((Account, User) au) =>
                 {
                     account = au.Item1;

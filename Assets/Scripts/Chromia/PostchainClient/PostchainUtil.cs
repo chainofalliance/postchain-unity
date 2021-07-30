@@ -109,9 +109,9 @@ namespace Chromia.Postchain.Client
             return retArr.ToArray();
         }
 
-        public static GTXValue DeserializeGTX(byte[] encodedMessage)
+        public static Gtx DeserializeGTX(byte[] encodedMessage)
         {
-            return Gtx.Deserialize(encodedMessage);
+            return Gtx.Decode(encodedMessage);
         }
 
         public static byte[] HashGTV(object content)

@@ -11,7 +11,8 @@ namespace Chromia.Postchain.Client
     public class BlockchainClient : MonoBehaviour
     {
         public string BlockchainRID { get { return _blockchainRID; } }
-        
+        public string BaseUrl { get { return _baseURL; } }
+
         [SerializeField] private string _blockchainRID;
         [SerializeField] private int _chainId;
         [SerializeField] private string _baseURL;
@@ -39,11 +40,11 @@ namespace Chromia.Postchain.Client
         {
             Gtx newGtx = new Gtx(this._blockchainRID);
 
-            foreach(byte[] signer in signers)
+            foreach (byte[] signer in signers)
             {
                 newGtx.AddSignerToGtx(signer);
             }
-          
+
             return new PostchainTransaction(newGtx, this._baseURL, this._blockchainRID, onError);
         }
 

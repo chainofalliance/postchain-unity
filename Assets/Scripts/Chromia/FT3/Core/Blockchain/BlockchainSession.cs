@@ -16,9 +16,9 @@ namespace Chromia.Postchain.Ft3
             this.Blockchain = blockchain;
         }
 
-        public IEnumerator GetAccountById<T>(string id, Action<Account> onSuccess)
+        public IEnumerator GetAccountById(string id, Action<Account> onSuccess)
         {
-            yield return Account.GetById<T>(id, this, onSuccess);
+            yield return Account.GetById(id, this, onSuccess);
         }
 
         public IEnumerator GetAccountsByParticipantId(string id, Action<Account[]> onSuccess)

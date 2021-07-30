@@ -179,7 +179,7 @@ namespace Chromia.Postchain.Ft3
             var accounts = new List<Account>();
             foreach (var id in ids)
             {
-                yield return Account.GetById<Account>(id, session,
+                yield return Account.GetById(id, session,
                 (Account account) =>
                 {
                     accounts.Add(account);
@@ -189,7 +189,7 @@ namespace Chromia.Postchain.Ft3
             onSuccess(accounts.ToArray());
         }
 
-        public static IEnumerator GetById<T>(string id, BlockchainSession session, Action<Account> onSuccess)
+        public static IEnumerator GetById(string id, BlockchainSession session, Action<Account> onSuccess)
         {
             Account account = null;
             yield return session.Query<string>("ft3.get_account_by_id", new List<(string, object)>() { ("id", id) }.ToArray(),
