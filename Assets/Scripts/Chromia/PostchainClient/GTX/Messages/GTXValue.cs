@@ -157,7 +157,9 @@ namespace Chromia.Postchain.Client
             {
                 case ASN1.AsnUtil.TAG_NULL:
                 {
-                    val.Choice = GTXValueChoice.Null; 
+                    val.Choice = GTXValueChoice.Null;
+                    sequence.ReadChoice();
+                    sequence.ReadChoice();
                     break;
                 }
                 case ASN1.AsnUtil.TAG_BYTE_ARRAY:
@@ -241,6 +243,11 @@ namespace Chromia.Postchain.Client
             {
                 switch (innerGtxValue.Choice)
                 {
+                    case (GTXValueChoice.Null):
+                    {
+                        retArr.Add(null);
+                        break;
+                    }
                     case (GTXValueChoice.ByteArray):
                     {
                         retArr.Add(innerGtxValue.ByteArray);
