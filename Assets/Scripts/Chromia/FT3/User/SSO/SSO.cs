@@ -1,5 +1,7 @@
-using System.Collections;
 using System;
+using System.Text;
+using System.Collections;
+using System.Web;
 
 namespace Chromia.Postchain.Ft3
 {
@@ -80,6 +82,35 @@ namespace Chromia.Postchain.Ft3
 
             if (!isAuthDescriptorValid) onSuccess((null, null));
             onSuccess((account, user));
+        }
+
+        public void InitiateLogin(string successUrl, string cancelUrl)
+        {
+            this.Store.Clear();
+            KeyPair keyPair = new KeyPair();
+            this.Store.TmpPrivKey = keyPair.PrivKey;
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendFormat(
+                "{0}/?route=/authorize&dappId={1}&pubkey={2}&successAction={3}&cancelAction={4}&version=0.1",
+                SSO._vaultUrl, this.Blockchain.Id, Util.ByteArrayToString(keyPair.PubKey), new Uri(successUrl), new Uri(cancelUrl)
+            );
+            UnityEngine.Application.OpenURL(sb.ToString());
+
+        }
+
+        public IEnumerator PendingSSO(Action<(Account, User)> onSuccess)
+        {
+            var url = UnityEngine.Application.absoluteURL;
+            var uri = new Uri(url);
+            var queryString = uri.GetComponents(UriComponents.Query, UriFormat.Unescaped);
+            var components = HttpUtility.ParseQueryString(queryString);
+            var tx = components["rawTx"];
+
+            if (tx != null)
+            {
+                yield return FinalizeLogin(tx, onSuccess);
+            }
         }
 
         public IEnumerator FinalizeLogin(string tx, Action<(Account, User)> onSuccess)

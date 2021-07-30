@@ -8,7 +8,7 @@ namespace Chromia.Postchain.Ft3
         {
             get
             {
-                string privKeyString = PlayerPrefs.GetString("__ssoTmpPrivKey", null);
+                string privKeyString = FileIOWrapper.GetString("__ssoTmpPrivKey");
                 if (privKeyString == null) return null;
 
                 return new KeyPair(privKeyString);
@@ -19,7 +19,7 @@ namespace Chromia.Postchain.Ft3
         {
             get
             {
-                string privKeyString = PlayerPrefs.GetString("__ssoPrivKey", null);
+                string privKeyString = FileIOWrapper.GetString("__ssoPrivKey");
                 if (privKeyString == null) return null;
 
                 return new KeyPair(privKeyString);
@@ -30,14 +30,14 @@ namespace Chromia.Postchain.Ft3
         {
             get
             {
-                string privKeyString = PlayerPrefs.GetString("__ssoTmpPrivKey", null);
+                string privKeyString = FileIOWrapper.GetString("__ssoTmpPrivKey");
                 if (privKeyString == null) return null;
 
                 return Util.HexStringToBuffer(privKeyString);
             }
             set
             {
-                PlayerPrefs.SetString("__ssoTmpPrivKey", Util.ByteArrayToString(value));
+                FileIOWrapper.SetString("__ssoTmpPrivKey", Util.ByteArrayToString(value));
             }
         }
 
@@ -45,14 +45,14 @@ namespace Chromia.Postchain.Ft3
         {
             get
             {
-                string privKeyString = PlayerPrefs.GetString("__ssoPrivKey", null);
+                string privKeyString = FileIOWrapper.GetString("__ssoPrivKey");
                 if (privKeyString == null) return null;
 
                 return Util.HexStringToBuffer(privKeyString);
             }
             set
             {
-                PlayerPrefs.SetString("__ssoPrivKey", Util.ByteArrayToString(value));
+                FileIOWrapper.SetString("__ssoPrivKey", Util.ByteArrayToString(value));
             }
         }
 
@@ -60,27 +60,27 @@ namespace Chromia.Postchain.Ft3
         {
             get
             {
-                string accountIdString = PlayerPrefs.GetString("__ssoAccountId", null);
+                string accountIdString = FileIOWrapper.GetString("__ssoAccountId");
                 if (accountIdString == null) return null;
 
                 return accountIdString;
             }
             set
             {
-                PlayerPrefs.SetString("__ssoAccountId", value);
+                FileIOWrapper.SetString("__ssoAccountId", value);
             }
         }
 
         public void ClearTmp()
         {
-            PlayerPrefs.DeleteKey("__ssoTmpPrivKey");
+            FileIOWrapper.DeleteKey("__ssoTmpPrivKey");
         }
 
         public void Clear()
         {
             ClearTmp();
-            PlayerPrefs.DeleteKey("__ssoPrivKey");
-            PlayerPrefs.DeleteKey("__ssoAccountId");
+            FileIOWrapper.DeleteKey("__ssoPrivKey");
+            FileIOWrapper.DeleteKey("__ssoAccountId");
         }
     }
 }

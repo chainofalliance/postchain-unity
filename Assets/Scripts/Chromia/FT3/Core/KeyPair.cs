@@ -15,7 +15,7 @@ namespace Chromia.Postchain.Ft3
 
         public KeyPair(string privateKey = null)
         {
-            if(privateKey != null)
+            if (privateKey != null)
             {
                 this.PrivKey = Util.HexStringToBuffer(privateKey);
                 this.PubKey = Client.PostchainUtil.VerifyKeyPair(privateKey);
@@ -26,11 +26,6 @@ namespace Chromia.Postchain.Ft3
                 this.PubKey = keyPair["pubKey"];
                 this.PrivKey = keyPair["privKey"];
             }
-        }
-
-        public Dictionary<string, byte[]> MakeKeyPair()
-        {
-            return Client.PostchainUtil.MakeKeyPair();
         }
     }
 }
