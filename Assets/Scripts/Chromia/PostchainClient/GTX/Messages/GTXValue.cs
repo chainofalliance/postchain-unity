@@ -39,6 +39,7 @@ namespace Chromia.Postchain.Client
                 
                 return this.Choice.Equals(gtxValue.Choice) 
                     && ((this.ByteArray == null || gtxValue.ByteArray == null) ? this.ByteArray == gtxValue.ByteArray : Enumerable.SequenceEqual(this.ByteArray, gtxValue.ByteArray))
+                    && ((this.String == null || gtxValue.String == null) ? this.String == gtxValue.String : this.String.Equals(gtxValue.String))
                     && this.Integer.Equals(gtxValue.Integer)
                     && ((this.Dict == null || gtxValue.Dict == null) ? this.Dict == gtxValue.Dict : Enumerable.SequenceEqual(this.Dict, gtxValue.Dict))
                     && ((this.Array == null || gtxValue.Array == null) ? this.Array == gtxValue.Array : Enumerable.SequenceEqual(this.Array, gtxValue.Array));
@@ -56,7 +57,7 @@ namespace Chromia.Postchain.Client
 
         public byte[] Encode()
         {
-            var messageWriter = new AsnWriter();
+            var messageWriter = new ASN1.AsnWriter();
 
             var choiceSize = 0;
             var choiceConstants = new List<byte>();
@@ -146,6 +147,70 @@ namespace Chromia.Postchain.Client
  
         }
 
+        public static GTXValue Decode(ASN1.AsnReader sequence)
+        {
+            var val = new GTXValue();
+
+            byte choice = sequence.ReadChoice();
+            sequence.ReadLength();
+            switch (choice)
+            {
+                case ASN1.AsnUtil.TAG_NULL:
+                {
+                    val.Choice = GTXValueChoice.Null;
+                    sequence.ReadChoice();
+                    sequence.ReadChoice();
+                    break;
+                }
+                case ASN1.AsnUtil.TAG_BYTE_ARRAY:
+                {
+                    val.Choice = GTXValueChoice.ByteArray;
+                    val.ByteArray = sequence.ReadOctetString(); 
+                    break;
+                }
+                case ASN1.AsnUtil.TAG_STRING:
+                {
+                    val.Choice = GTXValueChoice.String;
+                    val.String = sequence.ReadUTF8String(); 
+                    break;
+                }
+                case ASN1.AsnUtil.TAG_INTEGER:
+                {
+                    val.Choice = GTXValueChoice.Integer;
+                    val.Integer = sequence.ReadInteger(); 
+                    break;
+                }
+                case ASN1.AsnUtil.TAG_ARRAY:
+                {
+                    val.Choice = GTXValueChoice.Array;
+                    val.Array = new List<GTXValue>();
+                    var innerSequence = sequence.ReadSequence();
+                    while (innerSequence.RemainingBytes > 0)
+                    {
+                        val.Array.Add(GTXValue.Decode(innerSequence));
+                    }
+                    break;
+                }
+                case ASN1.AsnUtil.TAG_DICT:
+                {
+                    val.Choice = GTXValueChoice.Dict;
+                    val.Dict = new List<DictPair>();
+                    var innerSequence = sequence.ReadSequence();
+                    while (innerSequence.RemainingBytes > 0)
+                    {
+                        val.Dict.Add(DictPair.Decode(innerSequence));
+                    }
+                    break;
+                }
+                default:
+                {
+                    throw new System.Exception("Unknown choice tag: " + choice.ToString("X2"));
+                }
+            }
+
+            return val;
+        }
+
         private static byte[] TrimByteList(byte[] byteList)
         {
             List<byte> trimmedBytes = new List<byte>();
@@ -178,6 +243,11 @@ namespace Chromia.Postchain.Client
             {
                 switch (innerGtxValue.Choice)
                 {
+                    case (GTXValueChoice.Null):
+                    {
+                        retArr.Add(null);
+                        break;
+                    }
                     case (GTXValueChoice.ByteArray):
                     {
                         retArr.Add(innerGtxValue.ByteArray);
@@ -212,98 +282,6 @@ namespace Chromia.Postchain.Client
             return retArr.ToArray();
         }
 
-        [Obsolete("Use ASN1Writer.GetEncodedLength() instead")]
-        private static byte GetValueSize(GTXValue gtxValue)
-        {
-            switch (gtxValue.Choice)
-            {
-                case (GTXValueChoice.ByteArray):
-                {
-                    byte size = (byte) (gtxValue.ByteArray.Length + 2);
-                    if (size > 127)
-                    {
-                        size += 1;
-                    }
-                    
-                    return size;
-                }
-                case (GTXValueChoice.String):
-                {
-                    byte size = (byte) (gtxValue.String.Length + 2);
-                    if (size > 127)
-                    {
-                        size += 1;
-                    }
-                    
-                    return size;
-                }
-                case (GTXValueChoice.Integer):
-                {       
-                    byte size = (byte) (PostchainUtil.GetMaxAmountOfBytesForInteger(gtxValue.Integer) + 2);
-                    if (size > 127)
-                    {
-                        size += 1;
-                    }
-                    
-                    return size;
-                }
-                case (GTXValueChoice.Array):
-                {
-                    byte choiceSize = (byte) 2;
-
-                    foreach (var val in gtxValue.Array)
-                    {
-                        var tmpSize = GetValueSize(val);
-
-                        if (tmpSize > 127)
-                        {
-                            choiceSize += (byte) (tmpSize + 3);
-                        }
-                        else
-                        {
-                            choiceSize += (byte) (tmpSize + 2);
-                        }
-                    }
-                    
-                    if (choiceSize > 127)
-                    {
-                        choiceSize += 1;
-                    }
-
-                    return choiceSize;
-                }
-                case (GTXValueChoice.Dict):
-                {
-                    byte choiceSize = (byte) 2;
-
-                    foreach (var val in gtxValue.Dict)
-                    {
-                        var tmpSize = (byte) ((val.Name.Length + 2) + GetValueSize(val.Value));
-
-                        if (tmpSize > 127)
-                        {
-                            choiceSize += (byte) (tmpSize + 5);
-                        }
-                        else
-                        {
-                            choiceSize += (byte) (tmpSize + 4);
-                        }
-                    }
-
-                    if (choiceSize > 127)
-                    {
-                        choiceSize += 1;
-                    }
-
-                    return choiceSize;
-                }
-                default:
-                {
-                    throw new System.Exception("Chromia.PostchainClient.GTX.Messages GTXValue.GetValueSize() GTXValueChoice.Default case. Unknown choice " + gtxValue.Choice);
-                }
-            }
-        }
-
         public override string ToString()
         {
             switch (Choice)
@@ -314,7 +292,7 @@ namespace Chromia.Postchain.Client
                 }
                 case (GTXValueChoice.ByteArray):
                 {
-                    return PostchainUtil.ByteArrayToString(ByteArray);
+                    return "0x" + PostchainUtil.ByteArrayToString(ByteArray);
                 }
                 case (GTXValueChoice.String):
                 {

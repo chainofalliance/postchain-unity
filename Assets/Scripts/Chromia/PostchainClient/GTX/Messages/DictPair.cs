@@ -41,7 +41,7 @@ namespace Chromia.Postchain.Client
 
         public byte[] Encode()
         {
-            var messageWriter = new AsnWriter();
+            var messageWriter = new ASN1.AsnWriter();
             
             messageWriter.PushSequence();
             messageWriter.WriteUTF8String(this.Name);
@@ -51,16 +51,15 @@ namespace Chromia.Postchain.Client
             return messageWriter.Encode();
         }
 
-        // public static DictPair Decode(byte[] encodedMessage)
-        // {
-        //     var dictPair = new AsnReader(encodedMessage, AsnEncodingRules.BER);
-        //     var dictPairSequence = dictPair.ReadSequence();
+        public static DictPair Decode(ASN1.AsnReader sequence)
+        {
+            var dict = new DictPair();
+            var dictSequence = sequence.ReadSequence();
 
-        //     var newObject = new DictPair();
-        //     newObject.Name = dictPairSequence.ReadCharacterString(UniversalTagNumber.UTF8String);
-        //     newObject.Value = GTXValue.Decode(dictPair.PeekContentBytes().ToArray());
+            dict.Name = dictSequence.ReadUTF8String();
+            dict.Value = GTXValue.Decode(dictSequence);
 
-        //     return newObject;
-        // }
+            return dict;
+        }
     }
 }

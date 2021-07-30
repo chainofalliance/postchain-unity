@@ -7,13 +7,13 @@ namespace Chromia.Postchain.Client
     internal class GTXTransaction
     {
         public byte[] BlockchainID;
-        public List<GTXOperation> Operations;
+        public List<Operation> Operations;
         public List<byte[]> Signers;
         public List<byte[]> Signatures;
 
         public GTXTransaction(){
             this.BlockchainID = new byte[0];
-            this.Operations = new List<GTXOperation>();
+            this.Operations = new List<Operation>();
             this.Signers = new List<byte[]>();
             this.Signatures = new List<byte[]>();
         }
@@ -41,7 +41,7 @@ namespace Chromia.Postchain.Client
 
         public byte[] Encode()
         {
-            var messageWriter = new AsnWriter();
+            var messageWriter = new ASN1.AsnWriter();
             messageWriter.PushSequence();
 
             messageWriter.WriteOctetString(this.BlockchainID);
@@ -80,24 +80,33 @@ namespace Chromia.Postchain.Client
             return messageWriter.Encode();
         }
 
-        // public static GTXTransaction Decode(byte[] encodedMessage)
-        // {
-        //     var gtxTransaction = new AsnReader(encodedMessage, AsnEncodingRules.BER);
-        //     var gtxTransactionSequence = gtxTransaction.ReadSequence();
+        public static GTXTransaction Decode(byte[] encodedMessage)
+        {
+            var tx = new GTXTransaction();
+            var gtxTransaction = new ASN1.AsnReader(encodedMessage);
 
-        //     var newObject = new GTXTransaction();
-        //     newObject.BlockchainID = gtxTransactionSequence.ReadOctetString();
+            var bridSequence = gtxTransaction.ReadSequence();
+            tx.BlockchainID = bridSequence.ReadOctetString();
 
-        //     var operationSequence = gtxTransactionSequence.ReadSequence();
-        //     newObject.Operations = ASN1Util.SequenceToList<GTXOperation>(operationSequence, GTXOperation.Decode);
+            var operationSequence = gtxTransaction.ReadSequence();
+            while (operationSequence.RemainingBytes > 0)
+            {
+                tx.Operations.Add(Operation.Decode(operationSequence));
+            }
 
-        //     var signerSequence = gtxTransactionSequence.ReadSequence();
-        //     newObject.Signers = ASN1Util.SequenceToList<byte[]>(signerSequence, null);
+            var signerSequence = gtxTransaction.ReadSequence();
+            while (signerSequence.RemainingBytes > 0)
+            {
+                tx.Signers.Add(signerSequence.ReadOctetString());
+            }
 
-        //     var signatureSequence = gtxTransactionSequence.ReadSequence();
-        //     newObject.Signatures = ASN1Util.SequenceToList<byte[]>(signatureSequence, null);
+            var signatureSequence = gtxTransaction.ReadSequence();
+            while (signatureSequence.RemainingBytes > 0)
+            {
+                tx.Signatures.Add(signatureSequence.ReadOctetString());
+            }
 
-        //     return newObject;
-        // }
+            return tx;
+        }
     }
 }

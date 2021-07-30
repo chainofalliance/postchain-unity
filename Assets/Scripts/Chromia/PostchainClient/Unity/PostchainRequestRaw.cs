@@ -26,7 +26,7 @@ namespace Chromia.Postchain.Client.Unity
 
         public virtual IEnumerator Get()
         {
-            var request = new UnityWebRequest(this._uri, "GET");            
+            var request = new UnityWebRequest(this._uri, "GET");
             request.downloadHandler = new DownloadHandlerBuffer();
             yield return request.SendWebRequest();
 
@@ -38,7 +38,7 @@ namespace Chromia.Postchain.Client.Unity
 
         public virtual IEnumerator Post(string payload)
         {
-            var request = new UnityWebRequest(this._uri, "POST");            
+            var request = new UnityWebRequest(this._uri, "POST");
             byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(payload);
             var uploader = new UploadHandlerRaw(bodyRaw);
 

@@ -3,18 +3,8 @@ using System.Linq;
 using System.Collections.Generic;
 using Chromia.Postchain.Client;
 
-namespace Chromia.Postchain.Client
-{
-    internal enum Asn1TagValues
-    {
-        ContextSpecific = 1,
-        Integer = 2,
-        OctetString = 4,
-        Null = 5,
-        UTF8String = 12,
-        Sequence = 16
-    }
-    
+namespace Chromia.Postchain.Client.ASN1
+{    
     internal class AsnWriter
     {
         private List<byte> _buffer;
