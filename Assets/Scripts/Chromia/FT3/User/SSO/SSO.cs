@@ -1,7 +1,9 @@
 using System;
-using System.Web;
+using System.Linq;
 using System.Text;
 using System.Collections;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 using Chromia.Postchain.Client;
 using Chromia.Postchain.Client.Unity;
@@ -105,18 +107,17 @@ namespace Chromia.Postchain.Ft3
         public IEnumerator PendingSSO(Action<(Account, User)> onSuccess, Action onDiscard)
         {
             var url = UnityEngine.Application.absoluteURL;
-            var uri = new Uri(url);
-            var queryString = uri.GetComponents(UriComponents.Query, UriFormat.Unescaped);
-            var components = HttpUtility.ParseQueryString(queryString);
-            var tx = components["rawTx"];
+            var pairs = GetParams(url);
 
-            if (tx != null)
+            if (pairs.ContainsKey("rawTx"))
             {
-                UnityEngine.Debug.Log(tx);
-                yield return FinalizeLogin(tx, onSuccess);
+                var raw = pairs["rawTx"];
+                yield return FinalizeLogin(raw, onSuccess);
             }
-
-            onDiscard();
+            else
+            {
+                onDiscard();
+            }
         }
 
         public IEnumerator FinalizeLogin(string tx, Action<(Account, User)> onSuccess)
@@ -200,6 +201,15 @@ namespace Chromia.Postchain.Ft3
             }
 
             this.Store.Clear();
+        }
+
+        public static Dictionary<string, string> GetParams(string uri)
+        {
+            var matches = Regex.Matches(uri, @"[\?&](([^&=]+)=([^&=#]*))", RegexOptions.Compiled);
+            return matches.Cast<Match>().ToDictionary(
+                m => Uri.UnescapeDataString(m.Groups[2].Value),
+                m => Uri.UnescapeDataString(m.Groups[3].Value)
+            );
         }
     }
 }
