@@ -96,10 +96,10 @@ namespace Chromia.Postchain.Ft3
         public static IEnumerator GetByParticipantId(string id, BlockchainSession session, Action<Account[]> onSuccess)
         {
             List<string> accountIDs = null;
-            yield return session.Query<List<string>>("ft3.get_accounts_by_participant_id", new List<(string, object)>() { ("id", id) }.ToArray(),
-            (List<string> _accountIDs) =>
+            yield return session.Query<string[]>("ft3.get_accounts_by_participant_id", new List<(string, object)>() { ("id", id) }.ToArray(),
+            (string[] _accountIDs) =>
             {
-                accountIDs = _accountIDs;
+                accountIDs = _accountIDs.ToList();
             },
             (string error) => { });
 
@@ -109,10 +109,10 @@ namespace Chromia.Postchain.Ft3
         public static IEnumerator GetByAuthDescriptorId(string id, BlockchainSession session, Action<Account[]> onSuccess)
         {
             List<string> accountIDs = null;
-            yield return session.Query<List<string>>("ft3.get_accounts_by_auth_descriptor_id", new List<(string, object)>() { ("id", id) }.ToArray(),
-            (List<string> _accountIDs) =>
+            yield return session.Query<string[]>("ft3.get_accounts_by_auth_descriptor_id", new List<(string, object)>() { ("id", id) }.ToArray(),
+            (string[] _accountIDs) =>
             {
-                accountIDs = _accountIDs;
+                accountIDs = _accountIDs.ToList();
             },
             (string error) => { });
 
@@ -261,8 +261,11 @@ namespace Chromia.Postchain.Ft3
 
         public IEnumerator Sync(Action onSuccess)
         {
+            UnityEngine.Debug.Log("SyncAssets");
             yield return SyncAssets();
+            UnityEngine.Debug.Log("SyncAuthDescriptors");
             yield return SyncAuthDescriptors();
+            UnityEngine.Debug.Log("SyncRateLimit");
             yield return SyncRateLimit();
         }
 

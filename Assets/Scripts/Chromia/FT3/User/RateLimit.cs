@@ -33,7 +33,7 @@ namespace Chromia.Postchain.Ft3
 
         public static IEnumerator GetByAccountRateLimit(string id, Blockchain blockchain, Action<RateLimit> onSuccess)
         {
-            yield return blockchain.Query<RateLimit>("ft3.get_account_rate_limit",
+            yield return blockchain.Query<RateLimit>("ft3.get_account_rate_limit_last_update",
                 new List<(string, object)>() { ("account_id", id) }.ToArray(),
                 onSuccess,
                 (string error) => { }
