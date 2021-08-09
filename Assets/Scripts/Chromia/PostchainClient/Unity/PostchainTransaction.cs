@@ -73,7 +73,7 @@ namespace Chromia.Postchain.Client.Unity
         {
             yield return Post();
             yield return WaitConfirmation();
-            
+
             if (this.error)
             {
                 this._onError(this.errorMessage);
@@ -87,7 +87,7 @@ namespace Chromia.Postchain.Client.Unity
         public void Sign(byte[] privKey, byte[] pubKey)
         {
             byte[] pub = pubKey;
-            if(pubKey == null)
+            if (pubKey == null)
             {
                 pub = Secp256K1Manager.GetPublicKey(privKey, true);
             }
@@ -101,39 +101,39 @@ namespace Chromia.Postchain.Client.Unity
 
             var ret = request.parsedContent;
             this.error = true;
-            switch(ret.status)
+            switch (ret.status)
             {
                 case "confirmed":
-                {
-                    this.error = false;
-                    this.errorMessage = "";
-                    break;
-                }
+                    {
+                        this.error = false;
+                        this.errorMessage = "";
+                        break;
+                    }
                 case "rejected":
                 case "unknown":
-                {
-                    this.errorMessage = ret.rejectReason;
-                    break;
-                }
+                    {
+                        this.errorMessage = ret.rejectReason;
+                        break;
+                    }
                 case "waiting":
-                {
-                    yield return new WaitForSeconds(0.511f);
-                    yield return WaitConfirmation();
-                    break;
-                }
+                    {
+                        yield return new WaitForSeconds(0.511f);
+                        yield return WaitConfirmation();
+                        break;
+                    }
                 case "exception":
-                {
-                    this.errorMessage = "HTTP Exception: " + ret.rejectReason;
-                    break;
-                }
+                    {
+                        this.errorMessage = "HTTP Exception: " + ret.rejectReason;
+                        break;
+                    }
                 default:
-                {
-                    this.errorMessage = "Got unexpected response from server: " + ret.status;
-                    break;
-                }
+                    {
+                        this.errorMessage = "Got unexpected response from server: " + ret.status;
+                        break;
+                    }
             }
         }
-        
+
         private string GetTxRID()
         {
             return PostchainUtil.ByteArrayToString(this.GetBufferToSign());
@@ -143,13 +143,13 @@ namespace Chromia.Postchain.Client.Unity
         {
             return this.GtxObject.GetBufferToSign();
         }
-        
+
         private void AddSignature(byte[] pubKey, byte[] signature)
         {
             this.GtxObject.AddSignature(pubKey, signature);
         }
 
-        private string Encode()
+        public string Encode()
         {
             return this.GtxObject.Serialize();
         }

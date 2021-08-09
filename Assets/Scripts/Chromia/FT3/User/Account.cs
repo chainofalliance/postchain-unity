@@ -49,7 +49,7 @@ namespace Chromia.Postchain.Ft3
         }
     }
 
-    public interface AuthDescriptor
+    public interface AuthDescriptor : GtvSerializable
     {
         string ID
         {
@@ -64,6 +64,10 @@ namespace Chromia.Postchain.Ft3
             get;
         }
         byte[] Hash();
+    }
+
+    public interface GtvSerializable
+    {
         object[] ToGTV();
     }
 
@@ -139,40 +143,48 @@ namespace Chromia.Postchain.Ft3
             }
         }
 
-        // public static byte[] RawRegisterTransaction(AuthDescriptor authDescriptor, AuthDescriptor ssoAuthDescriptor, BlockchainSession session)
-        // {
-        //     TransactionBuilder txBuilder = session.Blockchain.CreateTransactionBuilder();
-        //     List<byte[]> signers = new List<byte[]>();
-        //     txBuilder.AddOperation(AccountDevOperations.Register(authDescriptor));
-        //     txBuilder.AddOperation(AccountOperations.AddAuthDescriptor(authDescriptor.ID, authDescriptor.ID, ssoAuthDescriptor));
+        public static byte[] RawTransactionRegister(User user, AuthDescriptor authDescriptor, Blockchain blockchain)
+        {
+            var signers = new List<byte[]>();
+            signers.AddRange(user.AuthDescriptor.Signers);
+            signers.AddRange(authDescriptor.Signers);
 
-        //     signers.AddRange(authDescriptor.Signers);
-        //     // TODO Add sso signers
-        //     var tx = txBuilder.Build(signers);
-        //     tx.Sign(session.User.KeyPair);
-        //     return tx.Raw();
-        // }
-        // JS
-        // static rawTransactionRegister(user: User, authDescriptor: AuthDescriptor, blockchain: Blockchain) : Buffer {
-        // return blockchain.transactionBuilder()
-        //     .add(register(user.authDescriptor))
-        //     .add(addAuthDescriptor(user.authDescriptor.id, user.authDescriptor.id, authDescriptor))
-        //     .build([user.authDescriptor.signers, authDescriptor.signers].flat())
-        //     .sign(user.keyPair)
-        //     .raw()
-        // }
-        // static rawTransactionAddAuthDescriptor(
-        // accountId: Buffer,
-        // user: User,
-        // authDescriptor: AuthDescriptor,
-        // blockchain: Blockchain
-        // ): Buffer {
-        //     return blockchain.transactionBuilder()
-        //         .add(addAuthDescriptor(accountId, user.authDescriptor.id, authDescriptor))
-        //         .build([user.authDescriptor.signers , authDescriptor.signers].flat())
-        //         .sign(user.keyPair)
-        //         .raw()
-        // }
+            var tx = blockchain.Connection.NewTransaction(
+                signers.ToArray(),
+                (string error) =>
+                {
+                    UnityEngine.Debug.Log(error);
+                }
+            );
+            var register = AccountDevOperations.Register(user.AuthDescriptor);
+            var addAuth = AccountOperations.AddAuthDescriptor(user.AuthDescriptor.ID, user.AuthDescriptor.ID, authDescriptor);
+            tx.AddOperation(register.Name, register.Args);
+            tx.AddOperation(addAuth.Name, addAuth.Args);
+
+            tx.Sign(user.KeyPair.PrivKey, user.KeyPair.PubKey);
+
+            return Util.HexStringToBuffer(tx.Encode());
+        }
+
+        public static byte[] RawTransactionAddAuthDescriptor(string accountId, User user, AuthDescriptor authDescriptor, Blockchain blockchain)
+        {
+            var signers = new List<byte[]>();
+            signers.AddRange(user.AuthDescriptor.Signers);
+            signers.AddRange(authDescriptor.Signers);
+
+            var tx = blockchain.Connection.NewTransaction(
+                signers.ToArray(),
+                (string error) =>
+                {
+                    UnityEngine.Debug.Log(error);
+                }
+            );
+            var addAuth = AccountOperations.AddAuthDescriptor(user.AuthDescriptor.ID, user.AuthDescriptor.ID, authDescriptor);
+            tx.AddOperation(addAuth.Name, addAuth.Args);
+            tx.Sign(user.KeyPair.PrivKey, user.KeyPair.PubKey);
+
+            return Util.HexStringToBuffer(tx.Encode());
+        }
 
         public static IEnumerator GetByIds(List<string> ids, BlockchainSession session, Action<Account[]> onSuccess)
         {
@@ -364,53 +376,38 @@ namespace Chromia.Postchain.Ft3
             );
         }
 
-        // public async Task<PaymentHistoryEntryShort[]> GetPaymentHistory()
-        // {
-        //     return await PaymentHistory.GetAccountById(this.Id, this.Session.Blockchain.Connection);
-        // }
+        public IEnumerator XcTransfer<T>(string destinationChainId, string destinationAccountId, string assetId, long amount, Action onSuccess)
+        {
+            yield return this.Session.Call<T>(this.XcTransferOp(
+                destinationChainId, destinationAccountId, assetId, amount),
+                () =>
+                {
+                    SyncAssets();
+                    onSuccess();
+                }
+            );
+        }
 
-        // public async Task<PaymentHistoryIterator> GetPaymentHistoryIterator(int pageSize)
-        // {
-        //     if (pageSize < 1)
-        //     {
-        //         throw new Exception("Page size has to be greater than 1");
-        //     }
-        //     await this._paymentHistorySyncManager.SyncAccount(this.Id, this.Session.Blockchain);
-        //     return this._paymentHistorySyncManager.PaymentHistoryStore.GetIterator(this.Id, pageSize);
-        // }
+        public Operation XcTransferOp(string destinationChainId, string destinationAccountId, string assetId, long amount)
+        {
+            var source = new object[] {
+                this.Id,
+                assetId,
+                this.Session.User.AuthDescriptor.ID,
+                amount,
+                new object[]{}
+            };
 
-        // public async Task XcTransfer(byte[] destinationChainId, byte[] destinationAccountId, byte[] assetId, int amount)
-        // {
-        //     var transactionBuilder = this.GetBlockchain().CreateTransactionBuilder();
-        //     transactionBuilder.AddOperation(XcTransferOp(destinationChainId, destinationAccountId, assetId, amount));
-        //     transactionBuilder.AddOperation(AccountOperations.Nop());
-        //     var tx = transactionBuilder.BuildAndSign(this.Session.User);
-        //     await tx.Post();
-        //     await this.SyncAssets();
-        // }
+            var target = new object[] {
+                destinationAccountId,
+                new object[]{}
+            };
 
-        // /* Operation and query */
-        // public Operation XcTransferOp(byte[] destinationChainId, byte[] destinationAccountId, byte[] assetId, int amount)
-        // {
+            var hops = new string[] {
+                destinationChainId
+            };
 
-        //     var source = new List<dynamic>() {
-        //         this.Id,
-        //         assetId,
-        //         this.Session.User.AuthDescriptor.ID,
-        //         amount,
-        //         new dynamic[] {}
-        //     }.ToArray();
-
-        //     var target = new List<dynamic>() {
-        //         destinationAccountId,
-        //         new dynamic[] {}
-        //     }.ToArray();
-
-        //     var hops = new List<byte[]>(){
-        //         destinationChainId
-        //     }.ToArray();
-
-        //     return AccountOperations.XcTransfer(source, target, hops);
-        // }
+            return AccountOperations.XcTransfer(source, target, hops);
+        }
     }
 }

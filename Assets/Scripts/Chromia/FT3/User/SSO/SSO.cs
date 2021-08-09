@@ -101,9 +101,9 @@ namespace Chromia.Postchain.Ft3
                 SSO._vaultUrl, this.Blockchain.Id, Util.ByteArrayToString(keyPair.PubKey), new Uri(successUrl), new Uri(cancelUrl)
             );
             UnityEngine.Application.OpenURL(sb.ToString());
-
         }
 
+        // For Webgl
         public IEnumerator PendingSSO(Action<(Account, User)> onSuccess, Action onDiscard)
         {
             var url = UnityEngine.Application.absoluteURL;

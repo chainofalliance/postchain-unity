@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System;
 
 namespace Chromia.Postchain.Ft3
@@ -15,7 +14,7 @@ namespace Chromia.Postchain.Ft3
             return new Operation("ft3.transfer", new object[] { inputs, outputs });
         }
 
-        public static Operation XcTransfer(object[] source, object[] target, byte[][] hops)
+        public static Operation XcTransfer(object[] source, object[] target, string[] hops)
         {
             return new Operation("ft3.xc.init_xfer", new object[] { source, target, hops });
         }

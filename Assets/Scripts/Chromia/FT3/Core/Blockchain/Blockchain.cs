@@ -14,6 +14,7 @@ namespace Chromia.Postchain.Ft3
         public readonly BlockchainInfo Info;
         public readonly BlockchainClient Connection;
         private readonly DirectoryService _directoryService;
+        private System.Random _random;
 
         public Blockchain(string id, BlockchainInfo info, BlockchainClient connection, DirectoryService directoryService)
         {
@@ -21,6 +22,7 @@ namespace Chromia.Postchain.Ft3
             this.Info = info;
             this.Connection = connection;
             this._directoryService = directoryService;
+            _random = new System.Random();
         }
 
         public static IEnumerator Initialize<T>(string blockchainRID, DirectoryService directoryService, Action<Blockchain> onSuccess, Action<string> onError)
@@ -149,7 +151,7 @@ namespace Chromia.Postchain.Ft3
                 (string error) => { Debug.Log(error); });
 
             request.AddOperation(operation.Name, operation.Args);
-            // TODO NOP()
+            request.AddOperation("nop", _random.Next().ToString());
 
             request.Sign(keyPair.PrivKey, keyPair.PubKey);
 

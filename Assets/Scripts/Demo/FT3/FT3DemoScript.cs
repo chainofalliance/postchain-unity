@@ -65,7 +65,7 @@ public class FT3DemoScript : MonoBehaviour
         Asset asset = null;
         yield return RegisterAccount((Account _account) => { account = _account; });
         yield return Asset.Register<Asset>(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), _blockchain, (Asset _asset) => { asset = _asset; });
-        // yield return AssetBalance.GiveBalance(account.Id, asset.Id, 100, _blockchain, () => { });
+        yield return AssetBalance.GiveBalance(account.Id, asset.Id, 100, _blockchain, () => { });
         yield return AssetBalance.GetByAccountId(account.Id, _blockchain, (AssetBalance[] balances) => { Debug.Log(balances[0].Asset.Name); });
     }
 }
