@@ -7,18 +7,20 @@ public class ProcessDeepLink : MonoBehaviour
     public string DeepLinkURL;
     public string Payload;
 
-
     private void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
             Application.deepLinkActivated += onDeepLinkActivated;
+            /*
             if (!String.IsNullOrEmpty(Application.absoluteURL))
             {
                 onDeepLinkActivated(Application.absoluteURL);
             }
-            else DeepLinkURL = "[none]";
+            else 
+            */
+            DeepLinkURL = "[none]";
             DontDestroyOnLoad(gameObject);
         }
         else

@@ -23,7 +23,9 @@ namespace Chromia.Postchain.Ft3
 #if UNITY_WEBGL
             RemoveFromLocalStorage(key: key);
 #else
+        UnityEngine.Debug.Log("DELETE BEFORE");
         UnityEngine.PlayerPrefs.DeleteKey(key: key);
+        UnityEngine.Debug.Log("DELETE AFTER");
 #endif
         }
 
@@ -52,7 +54,6 @@ namespace Chromia.Postchain.Ft3
 #else
         UnityEngine.PlayerPrefs.SetString(key: key, value: value);
 #endif
-
         }
 
         public static void Save()
