@@ -58,9 +58,10 @@ public class SSOStandalone : MonoBehaviour
         }
     }
 
-    public void Connect() 
+    public void Connect()
     {
-        if(this._blockchain == null) return;
-        StartCoroutine(SSOS());
+        // if(this._blockchain == null) return;
+        // StartCoroutine(SSOS());
+        Testing.Register();
     }
 }
