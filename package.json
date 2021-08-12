@@ -18,15 +18,5 @@
         "name": "Chromia",
         "email": "info@chromia.com",
         "url": "https://chromia.com/"
-    },
-    "contributors": [
-        {
-            "name": "Dennis Kirsch",
-            "email": "dennis.kirsch@chromaway.com"
-        },
-        {
-            "name": "Simon Sorgenfrei",
-            "email": "simon.sorgenfrei@chromaway.com"
-        }
-    ]
+    }
 }
