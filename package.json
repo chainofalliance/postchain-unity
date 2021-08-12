@@ -1,5 +1,5 @@
 {
-    "name": "chromia.rell",
+    "name": "com.chromia.rell",
     "version": "1.0.0",
     "displayName": "Rell SDK",
     "description": "This is an example package",
