@@ -138,7 +138,7 @@ namespace Chromia.Postchain.Ft3
 
             if (account != null)
             {
-                yield return account.Sync(() => { });
+                yield return account.Sync();
                 onSuccess(account);
             }
         }
@@ -213,7 +213,7 @@ namespace Chromia.Postchain.Ft3
 
             if (account != null)
             {
-                yield return account.Sync(null);
+                yield return account.Sync();
                 onSuccess(account);
             }
         }
@@ -272,7 +272,7 @@ namespace Chromia.Postchain.Ft3
             );
         }
 
-        public IEnumerator Sync(Action onSuccess)
+        public IEnumerator Sync()
         {
             yield return SyncAssets();
             yield return SyncAuthDescriptors();
@@ -285,6 +285,7 @@ namespace Chromia.Postchain.Ft3
                 (AssetBalance[] balances) => { this.Assets = balances.ToList(); }
             );
         }
+
         private IEnumerator SyncAuthDescriptors()
         {
             AuthDescriptorFactory.AuthDescriptorQuery[] authDescriptors = null;

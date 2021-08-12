@@ -6,7 +6,6 @@ public class PanelManager : MonoBehaviour
     public static PanelManager Instance { get; private set; }
 
     public Button ConnectButton;
-    public Text AccountIdText;
     public Dropdown AccountsDropdown;
 
     private void Awake()

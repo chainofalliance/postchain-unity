@@ -2,44 +2,47 @@ using System;
 using System.IO;
 using UnityEngine;
 
-public static class FileManager
+namespace Chromia.Postchain.Ft3
 {
-    public static bool WriteToFile(string a_FileName, string a_FileContents)
+    public static class FileManager
     {
-        var fullPath = Path.Combine(Application.persistentDataPath, a_FileName);
-
-        try
+        public static bool WriteToFile(string a_FileName, string a_FileContents)
         {
-            File.WriteAllText(fullPath, a_FileContents);
-            return true;
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"Failed to write to {fullPath} with exception {e}");
-            return false;
-        }
-    }
+            var fullPath = Path.Combine(Application.persistentDataPath, a_FileName);
 
-    public static bool LoadFromFile(string a_FileName, out string result)
-    {
-        var fullPath = Path.Combine(Application.persistentDataPath, a_FileName);
-
-        if (!File.Exists(fullPath))
-        {
-            result = "";
-            return false;
+            try
+            {
+                File.WriteAllText(fullPath, a_FileContents);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Failed to write to {fullPath} with exception {e}");
+                return false;
+            }
         }
 
-        try
+        public static bool LoadFromFile(string a_FileName, out string result)
         {
-            result = File.ReadAllText(fullPath);
-            return true;
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"Failed to read from {fullPath} with exception {e}");
-            result = "";
-            return false;
+            var fullPath = Path.Combine(Application.persistentDataPath, a_FileName);
+
+            if (!File.Exists(fullPath))
+            {
+                result = "";
+                return false;
+            }
+
+            try
+            {
+                result = File.ReadAllText(fullPath);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Failed to read from {fullPath} with exception {e}");
+                result = "";
+                return false;
+            }
         }
     }
 }

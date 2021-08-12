@@ -83,7 +83,7 @@ namespace Chromia.Postchain.Ft3
             }
         }
 
-        public IEnumerator AutoLogin<T>(Action<List<(Account, User)>> onSuccess)
+        public IEnumerator AutoLogin(Action<List<(Account, User)>> onSuccess)
         {
             yield return GetAccountAndUserByStoredIds(onSuccess);
         }
@@ -100,23 +100,6 @@ namespace Chromia.Postchain.Ft3
                 SSO._vaultUrl, this.Blockchain.Id, Util.ByteArrayToString(keyPair.PubKey), new Uri(successUrl), new Uri(cancelUrl)
             );
             UnityEngine.Application.OpenURL(sb.ToString());
-        }
-
-        // For Webgl
-        public IEnumerator PendingSSO(Action<(Account, User)> onSuccess, Action onDiscard)
-        {
-            var url = UnityEngine.Application.absoluteURL;
-            var pairs = GetParams(url);
-
-            if (pairs.ContainsKey("rawTx"))
-            {
-                var raw = pairs["rawTx"];
-                yield return FinalizeLogin(raw, onSuccess);
-            }
-            else
-            {
-                onDiscard();
-            }
         }
 
         public IEnumerator FinalizeLogin(string tx, Action<(Account, User)> onSuccess)
@@ -194,6 +177,23 @@ namespace Chromia.Postchain.Ft3
                 m => Uri.UnescapeDataString(m.Groups[2].Value),
                 m => Uri.UnescapeDataString(m.Groups[3].Value)
             );
+        }
+
+        // For Webgl
+        public IEnumerator PendingSSO(Action<(Account, User)> onSuccess, Action onDiscard)
+        {
+            var url = UnityEngine.Application.absoluteURL;
+            var pairs = GetParams(url);
+
+            if (pairs.ContainsKey("rawTx"))
+            {
+                var raw = pairs["rawTx"];
+                yield return FinalizeLogin(raw, onSuccess);
+            }
+            else
+            {
+                onDiscard();
+            }
         }
     }
 }

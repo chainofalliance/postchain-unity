@@ -17,14 +17,12 @@ namespace Chromia.Postchain.Ft3
         {
             get; set;
         }
-
-
         List<SavedSSOAccount> GetAccounts();
         void AddAccount(string accountId, string privKey);
+        void RemoveAccount(string accountId);
         void Load();
         void Save();
         void ClearTmp();
-        void RemoveAccount(string accountId);
     }
 
     [Serializable]

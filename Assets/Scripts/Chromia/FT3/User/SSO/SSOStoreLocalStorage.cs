@@ -2,22 +2,27 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using System;
 
+using System.Runtime.InteropServices;
+
 namespace Chromia.Postchain.Ft3
 {
 #if UNITY_WEBGL
     public static class SSOStoreWebgl
     {
         [DllImport("__Internal")]
-        private static extern void SaveToLocalStorage(string key, string value);
+        public static extern void SaveToLocalStorage(string key, string value);
 
         [DllImport("__Internal")]
-        private static extern string LoadFromLocalStorage(string key);
+        public static extern string LoadFromLocalStorage(string key);
 
         [DllImport("__Internal")]
-        private static extern void RemoveFromLocalStorage(string key);
+        public static extern void RemoveFromLocalStorage(string key);
 
         [DllImport("__Internal")]
-        private static extern int HasKeyInLocalStorage(string key);
+        public static extern int HasKeyInLocalStorage(string key);
+
+        [DllImport("__Internal")]
+        public static extern void CloseWindow();
     }
 #endif
 
@@ -36,7 +41,10 @@ namespace Chromia.Postchain.Ft3
         {
             string result = null;
 #if UNITY_WEBGL
-            result = SSOStoreWebgl.LoadFromLocalStorage(FILENAME);
+            if (SSOStoreWebgl.HasKeyInLocalStorage(STORAGEKEY) == 1)
+            {
+                result = SSOStoreWebgl.LoadFromLocalStorage(STORAGEKEY);
+            }
 #elif UNITY_STANDALONE
             FileManager.LoadFromFile(FILENAME, out result);
 #endif

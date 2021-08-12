@@ -7,21 +7,19 @@ using UnityEngine.UI;
 using System.Linq;
 using System;
 
-public class SSOStandalone : MonoBehaviour
+public class SSOWebgl : MonoBehaviour
 {
     [SerializeField] private string _blockchainRID;
     [SerializeField] private string _baseURL;
     [SerializeField] private string _vaultUrl;
     [SerializeField] private string _successUrl;
     [SerializeField] private string _cancelUrl;
-    [SerializeField] private string _customProtocolName;
 
     private Blockchain _blockchain;
     private SSO _sso;
 
     private void Awake()
     {
-        ProtocolHandler.HandleTempTx(_customProtocolName);
         SSO.VaultUrl = _vaultUrl;
 
         AotHelper.EnsureList<AssetBalance.AssetBalanceQuery>();
@@ -38,6 +36,16 @@ public class SSOStandalone : MonoBehaviour
     {
         yield return ConnectToBlockchain();
         _sso = new SSO(this._blockchain, new SSOStoreLocalStorage());
+
+        yield return _sso.PendingSSO(
+            ((Account, User) ac) =>
+            {
+            },
+            () =>
+            {
+
+            }
+        );
 
         yield return _sso.AutoLogin((List<(Account, User)> aus) =>
         {
@@ -59,31 +67,11 @@ public class SSOStandalone : MonoBehaviour
         });
     }
 
-    private IEnumerator SSOS()
-    {
-        ProtocolHandler.Register(_customProtocolName);
-        _sso.InitiateLogin(_successUrl, _cancelUrl);
-
-        while (_sso.Store.TmpTx == null)
-        {
-            yield return new WaitForSeconds(3);
-            _sso.Store.Load();
-        }
-
-        var payload = _sso.Store.TmpTx;
-        payload = payload.Split("?"[0])[1];
-        string raw = payload.Split("="[0])[1];
-
-        yield return _sso.FinalizeLogin(raw, ((Account, User) ac) =>
-        {
-            var options = new Dropdown.OptionData[] { new Dropdown.OptionData(ac.Item1.Id) };
-            PanelManager.Instance.AccountsDropdown.AddOptions(options.ToList());
-        });
-    }
-
     public void Connect()
     {
         if (this._blockchain == null) return;
-        StartCoroutine(SSOS());
+        _sso.InitiateLogin(_successUrl, _cancelUrl);
+        SSOStoreWebgl.CloseWindow();
     }
 }
+

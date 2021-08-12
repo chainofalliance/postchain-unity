@@ -17,12 +17,18 @@ mergeInto(LibraryManager.library, {
   },
 
   HasKeyInLocalStorage : function(key) {
-    if (localStorage.getItem(Pointer_stringify(key))) {
+    var item = localStorage.getItem(Pointer_stringify(key));
+
+    if (item) {
       return 1;
     }
     else {
       return 0;
     }
+  },
+
+  CloseWindow: function() {
+    window.close();
   }
 
 });

@@ -6,12 +6,12 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 0
-    path: Assets/Scripts/Demo/DemoScene.unity
+    path: Assets/Scripts/Demo/Postchain/DemoScene.unity
     guid: e451dd70fe68150b0b201fbf305fa3fe
-  - enabled: 0
-    path: Assets/Scripts/Demo/FT3/SSOWebGl/SOOScene.unity
-    guid: 1d0c35ea99542b4c6822871ba07ad529
   - enabled: 1
+    path: Assets/Scripts/Demo/FT3/SSOWebGl/SOOWebgl.unity
+    guid: 1d0c35ea99542b4c6822871ba07ad529
+  - enabled: 0
     path: Assets/Scripts/Demo/FT3/SSOStandalone/SSOStandalone.unity
     guid: 4674205f7e0ddacce9c855014f14a9d1
   m_configObjects: {}
