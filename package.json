@@ -1,6 +1,6 @@
 {
     "name": "com.chromia.postchain-unity",
-    "version": "1.0.0",
+    "version": "v0.1-alpha",
     "displayName": "Rell SDK",
     "description": "This is an example package",
     "unity": "2020.3",
