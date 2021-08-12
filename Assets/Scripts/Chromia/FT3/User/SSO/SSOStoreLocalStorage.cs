@@ -1,28 +1,85 @@
-using UnityEngine;
+using System.Collections.Generic;
+using Newtonsoft.Json;
+using System;
 
 namespace Chromia.Postchain.Ft3
 {
+#if UNITY_WEBGL
+    public static class SSOStoreWebgl
+    {
+        [DllImport("__Internal")]
+        private static extern void SaveToLocalStorage(string key, string value);
+
+        [DllImport("__Internal")]
+        private static extern string LoadFromLocalStorage(string key);
+
+        [DllImport("__Internal")]
+        private static extern void RemoveFromLocalStorage(string key);
+
+        [DllImport("__Internal")]
+        private static extern int HasKeyInLocalStorage(string key);
+    }
+#endif
+
     public class SSOStoreLocalStorage : SSOStore
     {
+        private const string STORAGEKEY = "SSO";
+        private const string FILENAME = STORAGEKEY + ".dat";
+        public SavedSSOData SSOData;
+
+        public SSOStoreLocalStorage()
+        {
+            Load();
+        }
+
+        public void Load()
+        {
+            string result = null;
+#if UNITY_WEBGL
+            result = SSOStoreWebgl.LoadFromLocalStorage(FILENAME);
+#elif UNITY_STANDALONE
+            FileManager.LoadFromFile(FILENAME, out result);
+#endif
+            if (!String.IsNullOrEmpty(result))
+            {
+                SSOData = JsonConvert.DeserializeObject<SavedSSOData>(result);
+            }
+            else
+            {
+                SSOData = new SavedSSOData();
+            }
+        }
+
+        public void Save()
+        {
+            string data = JsonConvert.SerializeObject(SSOData, Formatting.Indented);
+#if UNITY_WEBGL
+            SSOStoreWebgl.SaveToLocalStorage(STORAGEKEY, data);
+#elif UNITY_STANDALONE
+            FileManager.WriteToFile(FILENAME, data);
+#endif
+        }
+
         public KeyPair TmpKeyPair
         {
             get
             {
-                string privKeyString = FileIOWrapper.GetString("__ssoTmpPrivKey");
+                string privKeyString = SSOData.__ssoTmpPrivKey;
                 if (privKeyString == null) return null;
 
                 return new KeyPair(privKeyString);
             }
         }
 
-        public KeyPair KeyPair
+        public string TmpTx
         {
             get
             {
-                string privKeyString = FileIOWrapper.GetString("__ssoPrivKey");
-                if (privKeyString == null) return null;
-
-                return new KeyPair(privKeyString);
+                return SSOData.__tmpTX;
+            }
+            set
+            {
+                SSOData.__tmpTX = value;
             }
         }
 
@@ -30,57 +87,37 @@ namespace Chromia.Postchain.Ft3
         {
             get
             {
-                string privKeyString = FileIOWrapper.GetString("__ssoTmpPrivKey");
+                string privKeyString = SSOData.__ssoTmpPrivKey;
                 if (privKeyString == null) return null;
 
                 return Util.HexStringToBuffer(privKeyString);
             }
             set
             {
-                FileIOWrapper.SetString("__ssoTmpPrivKey", Util.ByteArrayToString(value));
-            }
-        }
-
-        public byte[] PrivKey
-        {
-            get
-            {
-                string privKeyString = FileIOWrapper.GetString("__ssoPrivKey");
-                if (privKeyString == null) return null;
-
-                return Util.HexStringToBuffer(privKeyString);
-            }
-            set
-            {
-                FileIOWrapper.SetString("__ssoPrivKey", Util.ByteArrayToString(value));
-            }
-        }
-
-        public string AccountID
-        {
-            get
-            {
-                string accountIdString = FileIOWrapper.GetString("__ssoAccountId");
-                if (accountIdString == null) return null;
-
-                return accountIdString;
-            }
-            set
-            {
-                FileIOWrapper.SetString("__ssoAccountId", value);
+                SSOData.__ssoTmpPrivKey = Util.ByteArrayToString(value);
             }
         }
 
         public void ClearTmp()
         {
-            FileIOWrapper.DeleteKey("__ssoTmpPrivKey");
+            SSOData.__ssoTmpPrivKey = null;
+            SSOData.__tmpTX = null;
         }
 
-        public void Clear()
+        public void AddAccount(string accountId, string privKey)
         {
-            ClearTmp();
-            FileIOWrapper.DeleteKey("__ssoPrivKey");
-            FileIOWrapper.DeleteKey("__ssoAccountId");
+            SSOData.AddAccountOrPrivKey(accountId, privKey);
         }
+
+        public void RemoveAccount(string accountId)
+        {
+            SSOData.RemoveAccount(accountId);
+        }
+
+        public List<SavedSSOAccount> GetAccounts()
+        {
+            return SSOData.__accounts;
+        }
+
     }
 }

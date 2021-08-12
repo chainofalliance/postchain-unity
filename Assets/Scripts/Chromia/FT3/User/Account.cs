@@ -207,7 +207,7 @@ namespace Chromia.Postchain.Ft3
             yield return session.Query<string>("ft3.get_account_by_id", new List<(string, object)>() { ("id", id) }.ToArray(),
             (string _id) =>
             {
-                account = new Account(_id, new List<AuthDescriptor>().ToArray(), session);
+                if (!String.IsNullOrEmpty(_id)) account = new Account(_id, new List<AuthDescriptor>().ToArray(), session);
             },
             (string error) => { });
 
@@ -217,6 +217,7 @@ namespace Chromia.Postchain.Ft3
                 onSuccess(account);
             }
         }
+
         public IEnumerator AddAuthDescriptor<T>(AuthDescriptor authDescriptor, Action onSuccess)
         {
             yield return this.Session.Call<T>(AccountOperations.AddAuthDescriptor(
@@ -234,7 +235,7 @@ namespace Chromia.Postchain.Ft3
         public IEnumerator IsAuthDescriptorValid(string id, Action<bool> onSuccess)
         {
             yield return Session.Query<bool>("ft3.is_auth_descriptor_valid",
-                new (string, object)[] { ("account_id", this.Id), ("auth_descriptor_id", id) },
+                new (string, object)[] { ("account_id", this.Id), ("auth_descriptor_id", Util.HexStringToBuffer(id)) },
                 onSuccess,
                 (string error) =>
                 {
@@ -273,11 +274,8 @@ namespace Chromia.Postchain.Ft3
 
         public IEnumerator Sync(Action onSuccess)
         {
-            UnityEngine.Debug.Log("SyncAssets");
             yield return SyncAssets();
-            UnityEngine.Debug.Log("SyncAuthDescriptors");
             yield return SyncAuthDescriptors();
-            UnityEngine.Debug.Log("SyncRateLimit");
             yield return SyncRateLimit();
         }
 

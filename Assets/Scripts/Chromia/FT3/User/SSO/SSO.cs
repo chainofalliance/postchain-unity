@@ -22,7 +22,7 @@ namespace Chromia.Postchain.Ft3
 
             if (store == null)
             {
-                Store = new SSOStoreDefault();
+                Store = new SSOStoreLocalStorage();
             }
             else
             {
@@ -36,13 +36,25 @@ namespace Chromia.Postchain.Ft3
             set { _vaultUrl = value; }
         }
 
-        private IEnumerator GetAccountAndUserByStoredIds(Action<(Account, User)> onSuccess)
+        private IEnumerator GetAccountAndUserByStoredIds(Action<List<(Account, User)>> onSuccess)
         {
-            var keyPair = this.Store.KeyPair;
-            var accountID = this.Store.AccountID;
+            List<(Account, User)> aus = new List<(Account, User)>();
+            List<SavedSSOAccount> accounts = this.Store.GetAccounts();
 
-            if (keyPair == null || accountID == null) onSuccess((null, null));
+            foreach (var acc in accounts)
+            {
+                yield return GetAccountAndUserByStoredId(acc, ((Account, User) au) =>
+                {
+                    aus.Add(au);
+                });
+            }
 
+            onSuccess(aus);
+        }
+
+        private IEnumerator GetAccountAndUserByStoredId(SavedSSOAccount savedAccount, Action<(Account, User)> onSuccess)
+        {
+            var keyPair = new KeyPair(savedAccount.__ssoPrivKey);
             var authDescriptor = new SingleSignatureAuthDescriptor(
                 keyPair.PubKey,
                 new FlagsType[] { FlagsType.Transfer }
@@ -53,47 +65,34 @@ namespace Chromia.Postchain.Ft3
             );
 
             Account account = null;
-            yield return this.Blockchain.NewSession(user).GetAccountById(accountID,
+            yield return this.Blockchain.NewSession(user).GetAccountById(savedAccount.__ssoAccountId,
                 (Account _account) =>
                 {
                     account = _account;
                 }
             );
 
-            if (account == null || user == null) onSuccess((null, null));
-            onSuccess((account, user));
+            if (account != null)
+            {
+                yield return account.IsAuthDescriptorValid(user.AuthDescriptor.ID,
+                    (bool isValid) =>
+                    {
+                        if (isValid) onSuccess((account, user));
+                    }
+                );
+            }
         }
 
-        public IEnumerator AutoLogin<T>(Action<(Account, User)> onSuccess)
+        public IEnumerator AutoLogin<T>(Action<List<(Account, User)>> onSuccess)
         {
-            Account account = null;
-            User user = null;
-
-            yield return GetAccountAndUserByStoredIds(
-                ((Account, User) au) =>
-                {
-                    account = au.Item1;
-                    user = au.Item2;
-                }
-            );
-
-            if (account == null || user == null) onSuccess((null, null));
-
-            bool isAuthDescriptorValid = false;
-
-            yield return account.IsAuthDescriptorValid(user.AuthDescriptor.ID,
-                (bool isValid) => { isAuthDescriptorValid = isValid; }
-            );
-
-            if (!isAuthDescriptorValid) onSuccess((null, null));
-            onSuccess((account, user));
+            yield return GetAccountAndUserByStoredIds(onSuccess);
         }
 
         public void InitiateLogin(string successUrl, string cancelUrl)
         {
-            this.Store.Clear();
             KeyPair keyPair = new KeyPair();
             this.Store.TmpPrivKey = keyPair.PrivKey;
+            this.Store.Save();
 
             StringBuilder sb = new StringBuilder();
             sb.AppendFormat(
@@ -127,8 +126,6 @@ namespace Chromia.Postchain.Ft3
 
             if (keyPair == null) throw new Exception("Error loading public key");
 
-            this.Store.PrivKey = keyPair.PrivKey;
-
             var authDescriptor = new SingleSignatureAuthDescriptor(
                 keyPair.PubKey,
                 new FlagsType[] { FlagsType.Transfer }
@@ -156,7 +153,8 @@ namespace Chromia.Postchain.Ft3
             if (isSuccess)
             {
                 var accountID = GetAccountId(gtx);
-                this.Store.AccountID = accountID;
+                this.Store.AddAccount(accountID, Util.ByteArrayToString(keyPair.PrivKey));
+                this.Store.Save();
 
                 Account account = null;
                 yield return this.Blockchain.NewSession(user).GetAccountById(accountID, (Account _account) => account = _account);
@@ -182,25 +180,11 @@ namespace Chromia.Postchain.Ft3
             }
         }
 
-        public IEnumerator Logout<T>()
+        public IEnumerator Logout<T>((Account, User) au)
         {
-            Account account = null;
-            User user = null;
-
-            yield return GetAccountAndUserByStoredIds(
-                ((Account, User) au) =>
-                {
-                    account = au.Item1;
-                    user = au.Item2;
-                }
-            );
-
-            if (account != null && user != null)
-            {
-                yield return account.DeleteAuthDescriptor<T>(user.AuthDescriptor, () => { });
-            }
-
-            this.Store.Clear();
+            yield return au.Item1.DeleteAuthDescriptor<T>(au.Item2.AuthDescriptor, () => { });
+            this.Store.ClearTmp();
+            this.Store.Save();
         }
 
         public static Dictionary<string, string> GetParams(string uri)

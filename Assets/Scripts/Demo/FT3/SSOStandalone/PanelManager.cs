@@ -7,6 +7,7 @@ public class PanelManager : MonoBehaviour
 
     public Button ConnectButton;
     public Text AccountIdText;
+    public Dropdown AccountsDropdown;
 
     private void Awake()
     {
