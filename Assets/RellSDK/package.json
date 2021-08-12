@@ -1,0 +1,32 @@
+{
+    "name": "chromia.rell",
+    "version": "1.0.0",
+    "displayName": "Rell SDK",
+    "description": "This is an example package",
+    "unity": "2020.3",
+    "unityRelease": "14f1",
+    "documentationUrl": "https://github.com/Cherden/postchain-unity-webgl/wiki",
+    "changelogUrl": "https://github.com/Cherden/postchain-unity-webgl",
+    "licensesUrl": "https://github.com/Cherden/postchain-unity-webgl",
+    "dependencies": {},
+    "keywords": [
+        "Chromia",
+        "Rell",
+        "Postchain"
+    ],
+    "author": {
+        "name": "Chromia",
+        "email": "info@chromia.com",
+        "url": "https://chromia.com/"
+    },
+    "contributors": [
+        {
+            "name": "Dennis Kirsch",
+            "email": "dennis.kirsch@chromaway.com"
+        },
+        {
+            "name": "Simon Sorgenfrei",
+            "email": "simon.sorgenfrei@chromaway.com"
+        }
+    ]
+}
