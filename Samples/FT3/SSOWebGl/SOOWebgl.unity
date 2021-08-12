@@ -375,7 +375,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 306141173}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 75b874106b6823a4cb84baecdaaa03a8, type: 3}
+  m_Script: {fileID: 11500000, guid: 2703970eca4dc6b0abd86b419a36e329, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ConnectButton: {fileID: 183214086}
@@ -974,14 +974,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 948567252}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 196280e969af1acf289ac53db8190bfe, type: 3}
+  m_Script: {fileID: 11500000, guid: 5edd308459237acbea0e455b5b35fc48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _blockchainRID: 1A3A5B4C919798B52292094185B37E71898CC245FA9F0AC51A33B473150FE889
-  _baseURL: http://localhost:7740/
-  _vaultUrl: https://dev.vault.chromia-development.com
-  _successUrl: http://localhost:3000
-  _cancelUrl: http://localhost:3000
+  _baseURL: http://localhost:7740
+  _vaultUrl: https://dev.vault.chromia-development.com/
+  _successUrl: http://localhost:3000/
+  _cancelUrl: http://localhost:3000/
 --- !u!4 &948567254
 Transform:
   m_ObjectHideFlags: 0
