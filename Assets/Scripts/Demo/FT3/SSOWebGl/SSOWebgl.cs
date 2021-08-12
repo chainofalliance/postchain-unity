@@ -71,7 +71,6 @@ public class SSOWebgl : MonoBehaviour
     {
         if (this._blockchain == null) return;
         _sso.InitiateLogin(_successUrl, _cancelUrl);
-        SSOStoreWebgl.CloseWindow();
     }
 }
 

@@ -35,6 +35,7 @@ namespace Chromia.Postchain.Ft3
             }
 
             GameObject goConnection = new GameObject();
+            goConnection.name = "Blockchain_" + blockchainRID;
             BlockchainClient connection = goConnection.AddComponent<BlockchainClient>();
 
             connection.Setup(
