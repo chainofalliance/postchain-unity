@@ -44,7 +44,7 @@ namespace Chromia.Postchain.Ft3
             );
 
             Blockchain blockchain = null;
-            yield return BlockchainInfo.GetInfo<BlockchainInfo>(connection,
+            yield return BlockchainInfo.GetInfo(connection,
             (BlockchainInfo info) =>
             {
                 blockchain = new Blockchain(blockchainRID, info, connection, directoryService);

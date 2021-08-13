@@ -18,9 +18,9 @@ namespace Chromia.Postchain.Ft3
             this.Description = description;
             this.RateLimitInfo = rateLimitInfo;
         }
-        public static IEnumerator GetInfo<T>(BlockchainClient connection, Action<BlockchainInfo> onSuccess, Action<string> onError)
+        public static IEnumerator GetInfo(BlockchainClient connection, Action<BlockchainInfo> onSuccess, Action<string> onError)
         {
-            yield return connection.Query<BlockchainInfoQuery>("ft3.get_blockchain_info", null,
+            yield return connection.Query("ft3.get_blockchain_info", null,
             (BlockchainInfoQuery res) =>
             {
                 var blockchainInfo = new BlockchainInfo(
