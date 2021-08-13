@@ -102,7 +102,7 @@ namespace Chromia.Postchain.Ft3
             (string error) => { });
         }
 
-        public IEnumerator GetLinkedChainsIds<T>(Action<string[]> onSuccess, Action<string> onError)
+        public IEnumerator GetLinkedChainsIds(Action<string[]> onSuccess, Action<string> onError)
         {
             return this.Query<string[]>("ft3.xc.get_linked_chains", new List<(string, object)>().ToArray(), onSuccess, onError);
         }
@@ -111,7 +111,7 @@ namespace Chromia.Postchain.Ft3
         {
             List<string> chaindIds = null;
 
-            yield return this.GetLinkedChainsIds<string[]>(
+            yield return this.GetLinkedChainsIds(
             (string[] linkedChains) =>
             {
                 chaindIds = linkedChains.ToList<string>();

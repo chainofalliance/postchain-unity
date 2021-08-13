@@ -13,11 +13,12 @@ public class TestUtil
         return prefix + "_" + GenerateNumber();
     }
 
-    public static byte[] GenerateId()
+    public static string GenerateId()
     {
-        return PostchainUtil.Sha256(
+        var id = PostchainUtil.Sha256(
             BitConverter.GetBytes(GenerateNumber())
         );
+        return Chromia.Postchain.Ft3.Util.ByteArrayToString(id);
     }
 
     public static byte[] BlockchainAccountId(byte[] chainId)

@@ -31,7 +31,7 @@ namespace Chromia.Postchain.Ft3
             return Util.ByteArrayToString(hash);
         }
 
-        public static IEnumerator Register<T>(string name, string chainId, Blockchain blockchain, Action<Asset> onSuccess)
+        public static IEnumerator Register(string name, string chainId, Blockchain blockchain, Action<Asset> onSuccess)
         {
             var request = blockchain.Connection.NewTransaction(new byte[][] { }, (string error) => { UnityEngine.Debug.Log(error); });
             request.AddOperation("ft3.dev_register_asset", name, chainId);
