@@ -49,7 +49,7 @@ public class SSOStandalone : MonoBehaviour
     private IEnumerator ConnectToBlockchain()
     {
         Postchain postchain = new Postchain(_baseURL);
-        yield return postchain.Blockchain<Blockchain>(_blockchainRID,
+        yield return postchain.Blockchain(_blockchainRID,
         (Blockchain _blockchain) =>
         {
             this._blockchain = _blockchain;

@@ -12,13 +12,13 @@ namespace Chromia.Postchain.Ft3
             this._url = url;
         }
 
-        public IEnumerator Blockchain<T>(string id, Action<Blockchain> onSuccess, Action<string> onError)
+        public IEnumerator Blockchain(string id, Action<Blockchain> onSuccess, Action<string> onError)
         {
             var directoryService = new DirectoryServiceBase(
                 new ChainConnectionInfo[] { new ChainConnectionInfo(id, _url) }
             );
 
-            yield return Ft3.Blockchain.Initialize<T>(id, directoryService, onSuccess, onError);
+            yield return Ft3.Blockchain.Initialize(id, directoryService, onSuccess, onError);
         }
     }
 }

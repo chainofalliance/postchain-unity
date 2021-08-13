@@ -123,10 +123,10 @@ namespace Chromia.Postchain.Ft3
             yield return Account.GetByIds(accountIDs, session, onSuccess);
         }
 
-        public static IEnumerator Register<T>(AuthDescriptor authDescriptor, BlockchainSession session, Action<Account> onSuccess)
+        public static IEnumerator Register(AuthDescriptor authDescriptor, BlockchainSession session, Action<Account> onSuccess)
         {
             Account account = null;
-            yield return session.Call<T>(AccountDevOperations.Register(authDescriptor),
+            yield return session.Call(AccountDevOperations.Register(authDescriptor),
             () =>
                 {
                     account = new Account(
@@ -218,9 +218,9 @@ namespace Chromia.Postchain.Ft3
             }
         }
 
-        public IEnumerator AddAuthDescriptor<T>(AuthDescriptor authDescriptor, Action onSuccess)
+        public IEnumerator AddAuthDescriptor(AuthDescriptor authDescriptor, Action onSuccess)
         {
-            yield return this.Session.Call<T>(AccountOperations.AddAuthDescriptor(
+            yield return this.Session.Call(AccountOperations.AddAuthDescriptor(
                 this.Id,
                 this.Session.User.AuthDescriptor.ID,
                 authDescriptor),
@@ -244,9 +244,9 @@ namespace Chromia.Postchain.Ft3
             );
         }
 
-        public IEnumerator DeleteAllAuthDescriptorsExclude<T>(AuthDescriptor authDescriptor, Action onSuccess)
+        public IEnumerator DeleteAllAuthDescriptorsExclude(AuthDescriptor authDescriptor, Action onSuccess)
         {
-            yield return this.Session.Call<T>(AccountOperations.DeleteAllAuthDescriptorsExclude(
+            yield return this.Session.Call(AccountOperations.DeleteAllAuthDescriptorsExclude(
                 this.Id,
                 authDescriptor.ID),
                 () =>
@@ -258,9 +258,9 @@ namespace Chromia.Postchain.Ft3
             );
         }
 
-        public IEnumerator DeleteAuthDescriptor<T>(AuthDescriptor authDescriptor, Action onSuccess)
+        public IEnumerator DeleteAuthDescriptor(AuthDescriptor authDescriptor, Action onSuccess)
         {
-            yield return this.Session.Call<T>(AccountOperations.DeleteAuthDescriptor(
+            yield return this.Session.Call(AccountOperations.DeleteAuthDescriptor(
                 this.Id,
                 this.Session.User.AuthDescriptor.ID,
                 authDescriptor.ID),
@@ -328,13 +328,13 @@ namespace Chromia.Postchain.Ft3
             return this.Assets.Find(assetBalance => assetBalance.Asset.Id.Equals(id));
         }
 
-        public IEnumerator TransferInputsToOutputs<T>(object[] inputs, object[] outputs, Action onSuccess)
+        public IEnumerator TransferInputsToOutputs(object[] inputs, object[] outputs, Action onSuccess)
         {
-            yield return this.Session.Call<T>(AccountOperations.Transfer(inputs, outputs), onSuccess);
+            yield return this.Session.Call(AccountOperations.Transfer(inputs, outputs), onSuccess);
             yield return this.SyncAssets();
         }
 
-        public IEnumerator Transfer<T>(string accountId, string assetId, long amount, Action onSuccess)
+        public IEnumerator Transfer(string accountId, string assetId, long amount, Action onSuccess)
         {
             var input = new List<object>{
                 this.Id,
@@ -351,14 +351,14 @@ namespace Chromia.Postchain.Ft3
                 new object[] {}
             }.ToArray();
 
-            yield return this.TransferInputsToOutputs<T>(
+            yield return this.TransferInputsToOutputs(
                 new List<object>() { input }.ToArray(),
                 new List<object>() { output }.ToArray(),
                 onSuccess
             );
         }
 
-        public IEnumerator BurnTokens<T>(string assetId, long amount, Action onSuccess)
+        public IEnumerator BurnTokens(string assetId, long amount, Action onSuccess)
         {
             var input = new List<object>(){
                 this.Id,
@@ -368,16 +368,16 @@ namespace Chromia.Postchain.Ft3
                 new object[] {}
             }.ToArray();
 
-            yield return this.TransferInputsToOutputs<T>(
+            yield return this.TransferInputsToOutputs(
                 new List<object>() { input }.ToArray(),
                 new List<object>() { }.ToArray(),
                 onSuccess
             );
         }
 
-        public IEnumerator XcTransfer<T>(string destinationChainId, string destinationAccountId, string assetId, long amount, Action onSuccess)
+        public IEnumerator XcTransfer(string destinationChainId, string destinationAccountId, string assetId, long amount, Action onSuccess)
         {
-            yield return this.Session.Call<T>(this.XcTransferOp(
+            yield return this.Session.Call(this.XcTransferOp(
                 destinationChainId, destinationAccountId, assetId, amount),
                 () =>
                 {

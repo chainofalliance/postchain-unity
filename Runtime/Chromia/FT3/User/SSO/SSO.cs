@@ -165,7 +165,7 @@ namespace Chromia.Postchain.Ft3
 
         public IEnumerator Logout<T>((Account, User) au)
         {
-            yield return au.Item1.DeleteAuthDescriptor<T>(au.Item2.AuthDescriptor, () => { });
+            yield return au.Item1.DeleteAuthDescriptor(au.Item2.AuthDescriptor, () => { });
             this.Store.ClearTmp();
             this.Store.Save();
         }

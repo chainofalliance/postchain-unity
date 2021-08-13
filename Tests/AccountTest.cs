@@ -3,7 +3,7 @@ using UnityEngine.TestTools;
 using Chromia.Postchain.Ft3;
 using System;
 
-public class Register
+public class AccountTest
 {
     private string _baseURL = "http://localhost:7740";
     private string _blockchainRID = "1A3A5B4C919798B52292094185B37E71898CC245FA9F0AC51A33B473150FE889";
@@ -15,7 +15,7 @@ public class Register
     public IEnumerator RegisterWithEnumeratorPasses()
     {
         Postchain postchain = new Postchain(_baseURL);
-        yield return postchain.Blockchain<Blockchain>(_blockchainRID,
+        yield return postchain.Blockchain(_blockchainRID,
         (Blockchain _blockchain) =>
         {
             this._blockchain = _blockchain;

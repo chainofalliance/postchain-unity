@@ -43,9 +43,9 @@ namespace Chromia.Postchain.Ft3
             return this.Blockchain.Query<T>(queryName, queryObject, onSuccess, onError);
         }
 
-        public IEnumerator Call<T>(Operation operation, Action onSuccess)
+        public IEnumerator Call(Operation operation, Action onSuccess)
         {
-            return this.Blockchain.Call<T>(operation, this.User, onSuccess);
+            return this.Blockchain.Call(operation, this.User, onSuccess);
         }
     }
 }

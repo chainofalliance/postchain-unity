@@ -25,7 +25,7 @@ namespace Chromia.Postchain.Ft3
             _random = new System.Random();
         }
 
-        public static IEnumerator Initialize<T>(string blockchainRID, DirectoryService directoryService, Action<Blockchain> onSuccess, Action<string> onError)
+        public static IEnumerator Initialize(string blockchainRID, DirectoryService directoryService, Action<Blockchain> onSuccess, Action<string> onError)
         {
             var chainConnectionInfo = directoryService.GetChainConnectionInfo(blockchainRID);
 
@@ -68,9 +68,9 @@ namespace Chromia.Postchain.Ft3
             yield return Account.GetByAuthDescriptorId(id, this.NewSession(user), onSuccess);
         }
 
-        public IEnumerator RegisterAccount<T>(AuthDescriptor authDescriptor, User user, Action<Account> onSuccess)
+        public IEnumerator RegisterAccount(AuthDescriptor authDescriptor, User user, Action<Account> onSuccess)
         {
-            yield return Account.Register<T>(authDescriptor, this.NewSession(user), onSuccess);
+            yield return Account.Register(authDescriptor, this.NewSession(user), onSuccess);
         }
 
         public IEnumerator GetAssetsByName(string name, Action<Asset[]> onSuccess)
@@ -107,7 +107,7 @@ namespace Chromia.Postchain.Ft3
             return this.Query<string[]>("ft3.xc.get_linked_chains", new List<(string, object)>().ToArray(), onSuccess, onError);
         }
 
-        public IEnumerator GetLinkedChains<T>(Action<List<Blockchain>> onSuccess, Action<string> onError)
+        public IEnumerator GetLinkedChains(Action<List<Blockchain>> onSuccess, Action<string> onError)
         {
             List<string> chaindIds = null;
 
@@ -125,7 +125,7 @@ namespace Chromia.Postchain.Ft3
 
             foreach (var chaindId in chaindIds)
             {
-                yield return Blockchain.Initialize<Blockchain>(chaindId, this._directoryService,
+                yield return Blockchain.Initialize(chaindId, this._directoryService,
                 (Blockchain blockchain) =>
                 {
                     blockchains.Add(blockchain);
@@ -144,7 +144,7 @@ namespace Chromia.Postchain.Ft3
             return this.Connection.Query<T>(queryName, queryObject, onSuccess, onError);
         }
 
-        public IEnumerator Call<T>(Operation operation, User user, Action onSuccess)
+        public IEnumerator Call(Operation operation, User user, Action onSuccess)
         {
             KeyPair keyPair = user.KeyPair;
             var request = this.Connection.NewTransaction(
