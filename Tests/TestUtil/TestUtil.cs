@@ -21,13 +21,13 @@ public class TestUtil
         return Chromia.Postchain.Ft3.Util.ByteArrayToString(id);
     }
 
-    public static byte[] BlockchainAccountId(byte[] chainId)
+    public static string BlockchainAccountId(string chainId)
     {
         var gtv = new object[] {
             "B",
             chainId
         };
-
-        return PostchainUtil.HashGTV(gtv);
+        var hash = PostchainUtil.HashGTV(gtv);
+        return Chromia.Postchain.Ft3.Util.ByteArrayToString(hash);
     }
 }
