@@ -18,14 +18,15 @@ public class AccountBuilder
 
     public AccountBuilder(Blockchain blockchain, User user)
     {
+        User __user = user;
         if (user == null)
         {
-            user = TestUser.SingleSig();
+            __user = TestUser.SingleSig();
         }
 
         this._blockchain = blockchain;
         this._participants = new List<KeyPair>() { user.KeyPair };
-        this._user = user;
+        this._user = __user;
     }
 
     #region public

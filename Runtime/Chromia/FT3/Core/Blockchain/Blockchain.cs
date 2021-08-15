@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
 using System;
-
 using UnityEngine;
 
 namespace Chromia.Postchain.Ft3
@@ -148,7 +147,7 @@ namespace Chromia.Postchain.Ft3
         {
             KeyPair keyPair = user.KeyPair;
             var request = this.Connection.NewTransaction(
-                new byte[][] { keyPair.PubKey },
+                user.AuthDescriptor.Signers.ToArray(),
                 (string error) => { Debug.Log(error); });
 
             request.AddOperation(operation.Name, operation.Args);
@@ -157,6 +156,11 @@ namespace Chromia.Postchain.Ft3
             request.Sign(keyPair.PrivKey, keyPair.PubKey);
 
             yield return request.PostAndWait(onSuccess);
+        }
+
+        public TransactionBuilder TransactionBuilder()
+        {
+            return new TransactionBuilder(this);
         }
     }
 }

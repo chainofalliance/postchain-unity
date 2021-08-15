@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine.TestTools;
 using Chromia.Postchain.Ft3;
 using NUnit.Framework;
+using System;
 
 public class AccountTest
 {
@@ -16,15 +17,31 @@ public class AccountTest
     private void DefaultErrorHandler(string error) { }
     private void EmptyCallback() { }
 
+    private IEnumerator AddAuthDescriptorTo(Account account, User adminUser, User user, Action onSuccess)
+    {
+        var signers = new List<byte[]>();
+        signers.AddRange(adminUser.AuthDescriptor.Signers);
+        signers.AddRange(user.AuthDescriptor.Signers);
+
+        yield return blockchain.TransactionBuilder()
+            .Add(AccountOperations.AddAuthDescriptor(account.Id, adminUser.AuthDescriptor.ID, user.AuthDescriptor))
+            .Build(signers.ToArray())
+            .Sign(adminUser.KeyPair)
+            .Sign(user.KeyPair)
+            .PostAndWait(onSuccess)
+        ;
+    }
+
     // Correctly creates keypair
     [UnityTest]
-    public void AccountTest1()
+    public IEnumerator AccountTest1()
     {
         var keyPair = Chromia.Postchain.Client.PostchainUtil.MakeKeyPair();
         var user = new KeyPair(Util.ByteArrayToString(keyPair["privKey"]));
 
         Assert.AreEqual(user.PrivKey, keyPair["privKey"]);
         Assert.AreEqual(user.PubKey, keyPair["pubKey"]);
+        yield return null;
     }
 
     // Register account on blockchain
@@ -101,52 +118,55 @@ public class AccountTest
         User user1 = TestUser.SingleSig();
         User user2 = TestUser.SingleSig();
 
-        Account account = null;
-        yield return Account.Register(
-           new MultiSignatureAuthDescriptor(
+        AuthDescriptor multiSig = new MultiSignatureAuthDescriptor(
                new List<byte[]>(){
                     user1.KeyPair.PubKey, user2.KeyPair.PubKey
                },
                2,
                new List<FlagsType>() { FlagsType.Account, FlagsType.Transfer }.ToArray()
-           ),
-           blockchain.NewSession(user1),
-           (Account _account) => account = _account
-       );
-
-        Assert.NotNull(account);
-    }
-
-    // should update account if 2 signatures provided
-    [UnityTest]
-    public IEnumerator AccountTest6()
-    {
-        yield return SetupBlockchain();
-        User user1 = TestUser.SingleSig();
-        User user2 = TestUser.SingleSig();
-
-        Account account = null;
-        yield return Account.Register(
-           new MultiSignatureAuthDescriptor(
-               new List<byte[]>(){
-                    user1.KeyPair.PubKey, user2.KeyPair.PubKey
-               },
-               2,
-               new List<FlagsType>() { FlagsType.Account, FlagsType.Transfer }.ToArray()
-           ),
-           blockchain.NewSession(user1),
-           (Account _account) => account = _account
-       );
-
-        Assert.NotNull(account);
-        AuthDescriptor authDescriptor = new SingleSignatureAuthDescriptor(
-                user1.KeyPair.PubKey,
-                new List<FlagsType>() { FlagsType.Transfer }.ToArray()
         );
-        yield return account.AddAuthDescriptor(authDescriptor, EmptyCallback);
 
-        Assert.AreEqual(2, account.AuthDescriptor.Count);
+        var tx = blockchain.Connection.NewTransaction(multiSig.Signers.ToArray(), (string error) => { });
+        var op = AccountDevOperations.Register(multiSig);
+        tx.AddOperation(op.Name, op.Args);
+        tx.Sign(user1.KeyPair.PrivKey, user1.KeyPair.PubKey);
+        tx.Sign(user2.KeyPair.PrivKey, user2.KeyPair.PubKey);
+
+        bool successfully = false;
+        yield return tx.PostAndWait(() => successfully = true);
+        Assert.True(successfully);
     }
+
+    // // should update account if 2 signatures provided
+    // [UnityTest]
+    // public IEnumerator AccountTest6()
+    // {
+    //     yield return SetupBlockchain();
+    //     User user1 = TestUser.SingleSig();
+    //     User user2 = TestUser.SingleSig();
+
+    //     Account account = null;
+    //     yield return Account.Register(
+    //        new MultiSignatureAuthDescriptor(
+    //            new List<byte[]>(){
+    //                 user1.KeyPair.PubKey, user2.KeyPair.PubKey
+    //            },
+    //            2,
+    //            new List<FlagsType>() { FlagsType.Account, FlagsType.Transfer }.ToArray()
+    //        ),
+    //        blockchain.NewSession(user1),
+    //        (Account _account) => account = _account
+    //    );
+
+    //     Assert.NotNull(account);
+    //     AuthDescriptor authDescriptor = new SingleSignatureAuthDescriptor(
+    //             user1.KeyPair.PubKey,
+    //             new List<FlagsType>() { FlagsType.Transfer }.ToArray()
+    //     );
+    //     yield return account.AddAuthDescriptor(authDescriptor, EmptyCallback);
+
+    //     Assert.AreEqual(2, account.AuthDescriptor.Count);
+    // }
 
     // should fail if only one signature provided
     [UnityTest]
@@ -156,28 +176,37 @@ public class AccountTest
         User user1 = TestUser.SingleSig();
         User user2 = TestUser.SingleSig();
 
-        Account account = null;
-        yield return Account.Register(
-            new MultiSignatureAuthDescriptor(
-                new List<byte[]>(){
+        AuthDescriptor multiSig = new MultiSignatureAuthDescriptor(
+               new List<byte[]>(){
                     user1.KeyPair.PubKey, user2.KeyPair.PubKey
-                },
-                2,
-                new List<FlagsType>() { FlagsType.Account, FlagsType.Transfer }.ToArray()
-            ),
-            blockchain.NewSession(user1),
-            (Account _account) => account = _account
+               },
+               2,
+               new List<FlagsType>() { FlagsType.Account, FlagsType.Transfer }.ToArray()
         );
 
+        var tx = blockchain.Connection.NewTransaction(multiSig.Signers.ToArray(), (string error) => { });
+        var op = AccountDevOperations.Register(multiSig);
+        tx.AddOperation(op.Name, op.Args);
+        tx.Sign(user1.KeyPair.PrivKey, user1.KeyPair.PubKey);
+        tx.Sign(user2.KeyPair.PrivKey, user2.KeyPair.PubKey);
+
+        bool successfully = false;
+        yield return tx.PostAndWait(() => successfully = true);
+        Assert.True(successfully);
+
+        Account account = null;
+        yield return blockchain.NewSession(user1).GetAccountById(multiSig.ID, (Account _account) => account = _account);
         Assert.NotNull(account);
 
+        successfully = false;
         yield return account.AddAuthDescriptor(
             new SingleSignatureAuthDescriptor(
                 user1.KeyPair.PubKey,
                 new List<FlagsType>() { FlagsType.Transfer }.ToArray()
-            ), EmptyCallback
+            ), () => successfully = true
         );
 
+        Assert.False(successfully);
         Assert.AreEqual(1, account.AuthDescriptor.Count);
     }
 
@@ -211,7 +240,7 @@ public class AccountTest
         User user1 = TestUser.SingleSig();
         User user2 = TestUser.SingleSig();
 
-        AccountBuilder accountBuilder = AccountBuilder.CreateAccountBuilder(blockchain);
+        AccountBuilder accountBuilder = AccountBuilder.CreateAccountBuilder(blockchain, user1);
         accountBuilder.WithParticipants(new List<KeyPair>() { user1.KeyPair });
         Account account = null;
         yield return accountBuilder.Build((Account _account) => { account = _account; });
@@ -220,12 +249,10 @@ public class AccountTest
         accountBuilder2.WithParticipants(new List<KeyPair>() { user2.KeyPair });
         accountBuilder2.WithPoints(1);
         Account account2 = null;
-        yield return accountBuilder.Build((Account _account) => { account2 = _account; });
+        yield return accountBuilder2.Build((Account _account) => { account2 = _account; });
 
-        yield return account2.AddAuthDescriptor(
-            new SingleSignatureAuthDescriptor(user1.KeyPair.PubKey, new List<FlagsType>() { FlagsType.Transfer }.ToArray()),
-            EmptyCallback
-        );
+        yield return AddAuthDescriptorTo(account2, user2, user1, EmptyCallback);
+
         Account[] accounts = null;
         yield return Account.GetByParticipantId(
             Util.ByteArrayToString(user1.KeyPair.PubKey),
@@ -248,7 +275,7 @@ public class AccountTest
         yield return accountBuilder.Build((Account _account) => { account = _account; });
 
         yield return Account.GetById(account.Id, blockchain.NewSession(user),
-        (Account _account) => Assert.AreEqual(account.Id, _account.Id));
+        (Account _account) => Assert.AreSame(account.Id, _account.Id));
     }
 
     // should have only one auth descriptor after calling deleteAllAuthDescriptorsExclude
