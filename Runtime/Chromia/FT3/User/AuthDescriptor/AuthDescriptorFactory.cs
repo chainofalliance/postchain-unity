@@ -12,6 +12,8 @@ namespace Chromia.Postchain.Ft3
             {
                 case AuthType.SingleSig:
                     return this.CreateSingleSig(args);
+                case AuthType.MultiSig:
+                    return this.CreateMultiSig(args);
             }
             return null;
         }
@@ -30,6 +32,30 @@ namespace Chromia.Postchain.Ft3
             return new SingleSignatureAuthDescriptor(
                 Util.HexStringToBuffer((string)gtxValue.Array[1].String),
                 flags.ToArray()
+            );
+        }
+
+        private MultiSignatureAuthDescriptor CreateMultiSig(byte[] args)
+        {
+            var gtxTransaction = new AsnReader(args);
+            var gtxValue = GTXValue.Decode(gtxTransaction);
+
+            var flags = new List<FlagsType>();
+            var pubKeys = new List<byte[]>();
+            var signatureRequired = (int)gtxValue.Array[1].Integer;
+
+            foreach (var flag in gtxValue.Array[0].Array)
+            {
+                flags.Add(Util.StringToFlagType((string)flag.String));
+            }
+
+            foreach (var pubKey in gtxValue.Array[2].Array)
+            {
+                pubKeys.Add(Util.HexStringToBuffer((string)pubKey.String));
+            }
+
+            return new MultiSignatureAuthDescriptor(
+                pubKeys, signatureRequired, flags.ToArray()
             );
         }
 

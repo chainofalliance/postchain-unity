@@ -113,7 +113,7 @@ namespace Chromia.Postchain.Ft3
         public static IEnumerator GetByAuthDescriptorId(string id, BlockchainSession session, Action<Account[]> onSuccess)
         {
             List<string> accountIDs = null;
-            yield return session.Query<string[]>("ft3.get_accounts_by_auth_descriptor_id", new List<(string, object)>() { ("id", id) }.ToArray(),
+            yield return session.Query<string[]>("ft3.get_accounts_by_auth_descriptor_id", new List<(string, object)>() { ("descriptor_id", id) }.ToArray(),
             (string[] _accountIDs) =>
             {
                 accountIDs = _accountIDs.ToList();

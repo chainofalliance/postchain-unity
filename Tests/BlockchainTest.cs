@@ -39,7 +39,7 @@ public class BlockchainTest
         yield return blockchain.RegisterAccount(user.AuthDescriptor, user, (Account _account) => { account = _account; });
         yield return session.GetAccountById(account.Id, (Account _account) => { foundAccount = _account; });
 
-        Assert.AreEqual(account.Id, foundAccount.Id);
+        Assert.AreEqual(account.Id.ToUpper(), foundAccount.Id.ToUpper());
     }
 
     // should return account by participant id
@@ -61,7 +61,7 @@ public class BlockchainTest
         );
 
         Assert.AreEqual(1, foundAccounts.Length);
-        Assert.AreEqual(account.Id, foundAccounts[0].Id);
+        Assert.AreEqual(account.Id.ToUpper(), foundAccounts[0].Id.ToUpper());
     }
 
     // should return account by auth descriptor id
@@ -83,7 +83,7 @@ public class BlockchainTest
         );
 
         Assert.AreEqual(1, foundAccounts.Length);
-        Assert.AreEqual(account.Id, foundAccounts[0].Id);
+        Assert.AreEqual(account.Id.ToUpper(), foundAccounts[0].Id.ToUpper());
     }
 
     // should be able to link other chain
@@ -111,8 +111,8 @@ public class BlockchainTest
         yield return blockchain.GetLinkedChainsIds(
             (string[] linkedChains) =>
             {
-                Assert.Contains(chainId1, linkedChains);
-                Assert.Contains(chainId2, linkedChains);
+                Assert.Contains(chainId1.ToUpper(), linkedChains);
+                Assert.Contains(chainId2.ToUpper(), linkedChains);
             },
             DefaultErrorHandler
         );
@@ -138,6 +138,6 @@ public class BlockchainTest
             (Asset _asset) => asset = _asset
         );
 
-        yield return blockchain.GetAssetById(asset.Id, (Asset _asset) => Assert.AreEqual(asset, _asset));
+        yield return blockchain.GetAssetById(asset.Id, (Asset _asset) => Assert.AreEqual(asset.Id.ToUpper(), _asset.Id.ToUpper()));
     }
 }

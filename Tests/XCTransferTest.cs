@@ -39,6 +39,7 @@ public class XCTransferTest
 
         AssetBalance accountBalance = null;
         yield return AssetBalance.GetByAccountAndAssetId(account.Id, asset.Id, blockchain, (AssetBalance _balance) => accountBalance = _balance);
+
         AssetBalance chainBalance = null;
         yield return AssetBalance.GetByAccountAndAssetId(
             TestUtil.BlockchainAccountId(destinationChainId),

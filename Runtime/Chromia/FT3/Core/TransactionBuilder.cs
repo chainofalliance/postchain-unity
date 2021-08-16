@@ -21,7 +21,7 @@ namespace Chromia.Postchain.Ft3
 
         public Transaction Build(byte[][] signers)
         {
-            var tx = Blockchain.Connection.NewTransaction(signers, (string error) => throw new System.Exception(error));
+            var tx = Blockchain.Connection.NewTransaction(signers, (string error) => { });
             foreach (var op in _operations)
             {
                 tx.AddOperation(op.Name, op.Args);

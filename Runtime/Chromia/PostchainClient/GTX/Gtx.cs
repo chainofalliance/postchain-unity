@@ -7,12 +7,12 @@ namespace Chromia.Postchain.Client
 
     public class Gtx
     {
-        public string BlockchainID {get; private set;}
-        public List<Operation> Operations {get; private set;}
-        public List<byte[]> Signers {get; private set;}
-        public List<byte[]> Signatures {get; private set;}
+        public string BlockchainID { get; private set; }
+        public List<Operation> Operations { get; private set; }
+        public List<byte[]> Signers { get; private set; }
+        public List<byte[]> Signatures { get; private set; }
 
-        public Gtx(string blockchainRID): this()
+        public Gtx(string blockchainRID) : this()
         {
             this.BlockchainID = blockchainRID;
 
@@ -28,20 +28,20 @@ namespace Chromia.Postchain.Client
 
         public Gtx AddOperationToGtx(string opName, object[] args)
         {
-            if(this.Signatures.Count != 0)
+            if (this.Signatures.Count != 0)
             {
                 throw new Exception("Cannot add function calls to an already signed gtx");
             }
 
             this.Operations.Add(new Operation(opName, args));
-   
+
             return this;
         }
 
         public static GTXValue ArgToGTXValue(object arg)
         {
             var gtxValue = new GTXValue();
-            
+
             if (arg is null)
             {
                 gtxValue.Choice = GTXValueChoice.Null;
@@ -56,34 +56,34 @@ namespace Chromia.Postchain.Client
                 catch
                 {
                     throw new System.Exception("Chromia.PostchainClient.GTX Gtx.ArgToGTXValue() Integer overflow.");
-                }                
+                }
             }
             else if (arg is byte[])
             {
                 gtxValue.Choice = GTXValueChoice.ByteArray;
-                gtxValue.ByteArray = (byte[]) arg;
+                gtxValue.ByteArray = (byte[])arg;
             }
             else if (arg is string)
             {
                 gtxValue.Choice = GTXValueChoice.String;
-                gtxValue.String = (string) arg;
+                gtxValue.String = (string)arg;
             }
             else if (arg is object[])
             {
-                var array = (object[]) arg;
+                var array = (object[])arg;
                 gtxValue.Choice = GTXValueChoice.Array;
 
                 gtxValue.Array = new List<GTXValue>();
                 foreach (var subArg in array)
                 {
-                    gtxValue.Array.Add(ArgToGTXValue((object) subArg));
+                    gtxValue.Array.Add(ArgToGTXValue((object)subArg));
                 }
             }
             else if (arg is Dictionary<string, object>)
             {
                 gtxValue.Choice = GTXValueChoice.Dict;
 
-                var dict = (Dictionary<string, object>) arg;
+                var dict = (Dictionary<string, object>)arg;
 
                 gtxValue.Dict = new List<DictPair>();
                 foreach (var dictPair in dict)
@@ -93,7 +93,7 @@ namespace Chromia.Postchain.Client
             }
             else if (arg is Operation)
             {
-                return ((Operation) arg).ToGtxValue();
+                return ((Operation)arg).ToGtxValue();
             }
             else
             {
@@ -106,7 +106,7 @@ namespace Chromia.Postchain.Client
 
         public void AddSignerToGtx(byte[] signer)
         {
-            if(this.Signatures.Count != 0)
+            if (this.Signatures.Count != 0)
             {
                 throw new Exception("Cannot add signers to an already signed gtx");
             }
@@ -118,7 +118,7 @@ namespace Chromia.Postchain.Client
         {
             byte[] bufferToSign = this.GetBufferToSign();
             var signature = PostchainUtil.Sign(bufferToSign, privKey);
-            
+
             this.AddSignature(pubKey, signature);
         }
 
@@ -143,10 +143,10 @@ namespace Chromia.Postchain.Client
         }
 
         public void AddSignature(byte[] pubKeyBuffer, byte[] signatureBuffer)
-        {   
+        {
             if (this.Signatures.Count == 0)
             {
-                foreach(var signer in this.Signers)
+                foreach (var signer in this.Signers)
                 {
                     this.Signatures.Add(null);
                 }
@@ -154,7 +154,8 @@ namespace Chromia.Postchain.Client
 
             var signerIndex = this.Signers.FindIndex(signer => signer.SequenceEqual(pubKeyBuffer));
 
-            if (signerIndex == -1) {
+            if (signerIndex == -1)
+            {
                 throw new Exception("No such signer, remember to call addSignerToGtx() before adding a signature");
             }
 
@@ -229,7 +230,7 @@ namespace Chromia.Postchain.Client
         {
             if ((encodedMessage[1] & 0x80) != 0)
             {
-                return (byte) ((encodedMessage[1] & (~((byte)0x80))) + 1);
+                return (byte)((encodedMessage[1] & (~((byte)0x80))) + 1);
             }
             else
             {

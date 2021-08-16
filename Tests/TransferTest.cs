@@ -65,9 +65,11 @@ public class TransferTest
 
         AccountBuilder accountBuilder2 = AccountBuilder.CreateAccountBuilder(blockchain);
         Account account2 = null;
-        yield return accountBuilder.Build((Account _account) => account2 = _account);
+        yield return accountBuilder2.Build((Account _account) => account2 = _account);
 
-        yield return account1.Transfer(account2.Id, asset.Id, 10, EmptyCallback);
+        bool successfully = false;
+        yield return account1.Transfer(account2.Id, asset.Id, 10, () => successfully = true);
+        Assert.False(successfully);
     }
 
     // should fail if auth descriptor doesn't have transfer rights
@@ -105,26 +107,39 @@ public class TransferTest
         yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset);
 
         User user = TestUser.SingleSig();
+        User user2 = TestUser.SingleSig();
+        User user3 = TestUser.SingleSig();
 
         AccountBuilder accountBuilder = AccountBuilder.CreateAccountBuilder(blockchain, user);
         accountBuilder.WithParticipants(new List<KeyPair>() { user.KeyPair });
         accountBuilder.WithBalance(asset, 200);
-        accountBuilder.WithPoints(1);
+        accountBuilder.WithPoints(0);
         Account account1 = null;
         yield return accountBuilder.Build((Account _account) => account1 = _account);
 
-        AccountBuilder accountBuilder2 = AccountBuilder.CreateAccountBuilder(blockchain);
-        accountBuilder2.WithParticipants(new List<KeyPair>() { new KeyPair(), new KeyPair() });
-        accountBuilder2.WithRequiredSignatures(2);
-        Account account2 = null;
-        yield return accountBuilder2.Build((Account _account) => account2 = _account);
 
-        yield return account1.Transfer(account2.Id, asset.Id, 10, EmptyCallback);
+        AuthDescriptor multiSig = new MultiSignatureAuthDescriptor(
+            new List<byte[]>(){
+                user2.KeyPair.PubKey, user3.KeyPair.PubKey
+            },
+            2,
+            new List<FlagsType>() { FlagsType.Account, FlagsType.Transfer }.ToArray()
+        );
+
+        yield return blockchain.TransactionBuilder()
+            .Add(AccountDevOperations.Register(multiSig))
+            .Build(multiSig.Signers.ToArray())
+            .Sign(user2.KeyPair)
+            .Sign(user3.KeyPair)
+            .PostAndWait(EmptyCallback);
+
+
+        yield return account1.Transfer(multiSig.ID, asset.Id, 10, EmptyCallback);
 
         AssetBalance assetBalance1 = null;
         yield return AssetBalance.GetByAccountAndAssetId(account1.Id, asset.Id, blockchain, (AssetBalance balance) => assetBalance1 = balance);
         AssetBalance assetBalance2 = null;
-        yield return AssetBalance.GetByAccountAndAssetId(account2.Id, asset.Id, blockchain, (AssetBalance balance) => assetBalance2 = balance);
+        yield return AssetBalance.GetByAccountAndAssetId(multiSig.ID, asset.Id, blockchain, (AssetBalance balance) => assetBalance2 = balance);
 
         Assert.AreEqual(190, assetBalance1.Amount);
         Assert.AreEqual(10, assetBalance2.Amount);

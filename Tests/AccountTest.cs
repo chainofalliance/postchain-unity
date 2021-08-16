@@ -137,36 +137,50 @@ public class AccountTest
         Assert.True(successfully);
     }
 
-    // // should update account if 2 signatures provided
-    // [UnityTest]
-    // public IEnumerator AccountTest6()
-    // {
-    //     yield return SetupBlockchain();
-    //     User user1 = TestUser.SingleSig();
-    //     User user2 = TestUser.SingleSig();
+    // should update account if 2 signatures provided
+    [UnityTest]
+    public IEnumerator AccountTest6()
+    {
+        yield return SetupBlockchain();
+        User user1 = TestUser.SingleSig();
+        User user2 = TestUser.SingleSig();
 
-    //     Account account = null;
-    //     yield return Account.Register(
-    //        new MultiSignatureAuthDescriptor(
-    //            new List<byte[]>(){
-    //                 user1.KeyPair.PubKey, user2.KeyPair.PubKey
-    //            },
-    //            2,
-    //            new List<FlagsType>() { FlagsType.Account, FlagsType.Transfer }.ToArray()
-    //        ),
-    //        blockchain.NewSession(user1),
-    //        (Account _account) => account = _account
-    //    );
+        AuthDescriptor multisig = new MultiSignatureAuthDescriptor(
+            new List<byte[]>(){
+                user1.KeyPair.PubKey, user2.KeyPair.PubKey
+            },
+            2,
+            new List<FlagsType>() { FlagsType.Account, FlagsType.Transfer }.ToArray()
+        );
+        yield return blockchain.TransactionBuilder()
+            .Add(AccountDevOperations.Register(multisig))
+            .Build(multisig.Signers.ToArray())
+            .Sign(user1.KeyPair)
+            .Sign(user2.KeyPair)
+            .PostAndWait(EmptyCallback)
+        ;
 
-    //     Assert.NotNull(account);
-    //     AuthDescriptor authDescriptor = new SingleSignatureAuthDescriptor(
-    //             user1.KeyPair.PubKey,
-    //             new List<FlagsType>() { FlagsType.Transfer }.ToArray()
-    //     );
-    //     yield return account.AddAuthDescriptor(authDescriptor, EmptyCallback);
+        Account account = null;
+        yield return Account.GetById(multisig.ID, blockchain.NewSession(user1), (Account _account) => account = _account);
+        Assert.NotNull(account);
 
-    //     Assert.AreEqual(2, account.AuthDescriptor.Count);
-    // }
+        AuthDescriptor authDescriptor = new SingleSignatureAuthDescriptor(
+                user1.KeyPair.PubKey,
+                new List<FlagsType>() { FlagsType.Transfer }.ToArray()
+        );
+
+        yield return blockchain.TransactionBuilder()
+            .Add(AccountOperations.AddAuthDescriptor(account.Id, account.AuthDescriptor[0].ID, authDescriptor))
+            .Build(account.AuthDescriptor[0].Signers.ToArray())
+            .Sign(user1.KeyPair)
+            .Sign(user2.KeyPair)
+            .PostAndWait(EmptyCallback)
+        ;
+
+        yield return account.Sync();
+
+        Assert.AreEqual(2, account.AuthDescriptor.Count);
+    }
 
     // should fail if only one signature provided
     [UnityTest]
@@ -275,7 +289,7 @@ public class AccountTest
         yield return accountBuilder.Build((Account _account) => { account = _account; });
 
         yield return Account.GetById(account.Id, blockchain.NewSession(user),
-        (Account _account) => Assert.AreSame(account.Id, _account.Id));
+        (Account _account) => Assert.AreEqual(account.Id.ToUpper(), _account.Id.ToUpper()));
     }
 
     // should have only one auth descriptor after calling deleteAllAuthDescriptorsExclude
@@ -289,28 +303,19 @@ public class AccountTest
 
         AccountBuilder accountBuilder = AccountBuilder.CreateAccountBuilder(blockchain, user1);
         accountBuilder.WithParticipants(new List<KeyPair>() { user1.KeyPair });
-        accountBuilder.WithPoints(3);
+        accountBuilder.WithPoints(4);
 
         Account account = null;
         yield return accountBuilder.Build((Account _account) => { account = _account; });
 
-        AuthDescriptor authDescriptor1 = new SingleSignatureAuthDescriptor(
-            user2.KeyPair.PubKey,
-            new List<FlagsType>() { FlagsType.Account, FlagsType.Transfer }.ToArray()
-        );
-
-        AuthDescriptor authDescriptor2 = new SingleSignatureAuthDescriptor(
-            user3.KeyPair.PubKey,
-            new List<FlagsType>() { FlagsType.Account, FlagsType.Transfer }.ToArray()
-        );
-
-        yield return account.AddAuthDescriptor(authDescriptor1, EmptyCallback);
-        yield return account.AddAuthDescriptor(authDescriptor2, EmptyCallback);
+        yield return AddAuthDescriptorTo(account, user1, user2, EmptyCallback);
+        yield return AddAuthDescriptorTo(account, user1, user3, EmptyCallback);
 
         yield return account.DeleteAllAuthDescriptorsExclude(user1.AuthDescriptor, EmptyCallback);
         yield return blockchain.NewSession(user1).GetAccountById(account.Id,
-            (Account _account) => Assert.AreEqual(1, _account.AuthDescriptor.Count)
+            (Account _account) => account = _account
         );
+        Assert.AreEqual(1, account.AuthDescriptor.Count);
     }
 
     // should be able to register account by directly calling \'register_account\' operation
@@ -322,7 +327,7 @@ public class AccountTest
         User user = TestUser.SingleSig();
 
         yield return blockchain.Call(AccountOperations.Op("ft3.dev_register_account",
-            new object[] { user.AuthDescriptor })
+            new object[] { user.AuthDescriptor.ToGTV() })
         , user, EmptyCallback);
 
         BlockchainSession session = blockchain.NewSession(user);
@@ -330,5 +335,80 @@ public class AccountTest
         Account account = null;
         yield return session.GetAccountById(user.AuthDescriptor.ID, (Account _account) => account = _account);
         Assert.NotNull(account);
+    }
+
+    // should be possible for auth descriptor to delete itself without admin flag
+    [UnityTest]
+    public IEnumerator AccountTest13()
+    {
+        yield return SetupBlockchain();
+        User user1 = TestUser.SingleSig();
+
+        AccountBuilder accountBuilder = AccountBuilder.CreateAccountBuilder(blockchain, user1);
+        accountBuilder.WithParticipants(new List<KeyPair>() { user1.KeyPair });
+        accountBuilder.WithPoints(4);
+
+        Account account = null;
+        yield return accountBuilder.Build((Account _account) => { account = _account; });
+
+        KeyPair keyPair = new KeyPair();
+        User user2 = new User(keyPair,
+            new SingleSignatureAuthDescriptor(
+                keyPair.PubKey,
+                new FlagsType[] { FlagsType.Transfer }
+            )
+        );
+
+        yield return AddAuthDescriptorTo(account, user1, user2, EmptyCallback);
+
+        Account account2 = null;
+        yield return blockchain.NewSession(user2).GetAccountById(account.Id, (Account _account) => account2 = _account);
+        bool successfully = false;
+        yield return account2.DeleteAuthDescriptor(user2.AuthDescriptor, () => successfully = true);
+
+        Assert.True(successfully);
+        yield return account2.Sync();
+        Assert.AreEqual(1, account2.AuthDescriptor.Count);
+
+    }
+
+    // shouldn't be possible for auth descriptor to delete other auth descriptor without admin flag
+    [UnityTest]
+    public IEnumerator AccountTest15()
+    {
+        yield return SetupBlockchain();
+        User user1 = TestUser.SingleSig();
+
+        Account account = null;
+        yield return AccountBuilder.CreateAccountBuilder(blockchain, user1)
+            .WithParticipants(new KeyPair[] { user1.KeyPair })
+            .WithPoints(4)
+            .Build((Account _account) => account = _account);
+
+        KeyPair keyPair2 = new KeyPair();
+        User user2 = new User(keyPair2,
+            new SingleSignatureAuthDescriptor(
+                keyPair2.PubKey,
+                new FlagsType[] { FlagsType.Transfer }
+            )
+        );
+
+        KeyPair keyPair3 = new KeyPair();
+        User user3 = new User(keyPair3,
+            new SingleSignatureAuthDescriptor(
+                keyPair3.PubKey,
+                new FlagsType[] { FlagsType.Transfer }
+            )
+        );
+
+        yield return AddAuthDescriptorTo(account, user1, user2, EmptyCallback);
+        yield return AddAuthDescriptorTo(account, user1, user3, EmptyCallback);
+
+        Account account2 = null;
+        yield return blockchain.NewSession(user3).GetAccountById(account.Id, (Account _account) => account2 = _account);
+
+        bool successfully = false;
+        yield return account2.DeleteAuthDescriptor(user2.AuthDescriptor, () => successfully = true);
+        Assert.False(successfully);
     }
 }

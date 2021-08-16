@@ -70,7 +70,6 @@ namespace Chromia.Postchain.Ft3
                 hexPubs.Add(Util.ByteArrayToString(pubkey));
             }
 
-
             var gtv = new List<object>(){
                 Util.AuthTypeToString(AuthType.MultiSig),
                 this.PubKeys.ToArray(),

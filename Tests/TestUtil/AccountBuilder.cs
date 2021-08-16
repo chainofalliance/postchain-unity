@@ -18,15 +18,15 @@ public class AccountBuilder
 
     public AccountBuilder(Blockchain blockchain, User user)
     {
-        User __user = user;
+        User _user = user;
         if (user == null)
         {
-            __user = TestUser.SingleSig();
+            _user = TestUser.SingleSig();
         }
 
         this._blockchain = blockchain;
-        this._participants = new List<KeyPair>() { user.KeyPair };
-        this._user = __user;
+        this._participants = new List<KeyPair>() { _user.KeyPair };
+        this._user = _user;
     }
 
     #region public
@@ -74,7 +74,10 @@ public class AccountBuilder
         if (account != null)
         {
             yield return this.AddBalanceIfNeeded(account);
-            yield return this.AddPointsIfNeeded(account, (RateLimit _rateLimit) => { account.RateLimit = _rateLimit; });
+            yield return this.AddPointsIfNeeded(account, (RateLimit _rateLimit) =>
+            {
+                account.RateLimit = _rateLimit;
+            });
         }
 
         onSuccess(account);

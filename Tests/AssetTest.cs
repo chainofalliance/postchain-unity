@@ -44,7 +44,7 @@ public class AssetTest
 
         Asset asset = null;
         yield return Asset.Register(
-            TestUtil.GenerateAssetName(),
+            assetName,
             TestUtil.GenerateId(),
             blockchain,
             (Asset _asset) => asset = _asset
@@ -52,6 +52,7 @@ public class AssetTest
 
         Asset[] assets = null;
         yield return Asset.GetByName(assetName, blockchain, (Asset[] _assets) => assets = _assets);
+
         Assert.AreEqual(1, assets.Length);
         Assert.AreEqual(asset.Name, assets[0].Name);
     }
@@ -64,22 +65,21 @@ public class AssetTest
 
         var assetName = TestUtil.GenerateAssetName();
         var testChainId = TestUtil.GenerateId();
-        var assetId = Chromia.Postchain.Client.PostchainUtil.HashGTV(new List<object>() { assetName, testChainId }.ToArray());
 
         Asset asset = null;
         yield return Asset.Register(
-            TestUtil.GenerateAssetName(),
-            TestUtil.GenerateId(),
+            assetName,
+            testChainId,
             blockchain,
             (Asset _asset) => asset = _asset
         );
 
         Asset expectedAsset = null;
-        yield return Asset.GetById(Util.ByteArrayToString(assetId), blockchain, (Asset _asset) => expectedAsset = _asset);
+        yield return Asset.GetById(asset.Id, blockchain, (Asset _asset) => expectedAsset = _asset);
 
         Assert.AreEqual(assetName, expectedAsset.Name);
-        Assert.AreEqual(assetId, expectedAsset.Id);
-        Assert.AreEqual(testChainId, expectedAsset.IssuingChainRid);
+        Assert.AreEqual(asset.Id.ToUpper(), expectedAsset.Id.ToUpper());
+        Assert.AreEqual(testChainId.ToUpper(), expectedAsset.IssuingChainRid.ToUpper());
     }
 
     // should return all the assets registered

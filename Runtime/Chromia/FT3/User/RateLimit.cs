@@ -9,12 +9,12 @@ namespace Chromia.Postchain.Ft3
     {
         public int Points;
         [JsonProperty(PropertyName = "last_update")]
-        public int LastUpgrade;
+        public long LastUpdate;
 
-        public RateLimit(int points, int lastUpgrade)
+        public RateLimit(int points, long last_update)
         {
             Points = points;
-            LastUpgrade = lastUpgrade;
+            LastUpdate = last_update;
         }
 
         public int GetRequestsLeft()
@@ -28,6 +28,7 @@ namespace Chromia.Postchain.Ft3
 
             var request = blockchain.Connection.NewTransaction(new byte[][] { }, (string error) => { UnityEngine.Debug.Log(error); });
             request.AddOperation(op.Name, op.Args);
+            request.AddOperation("nop", AccountOperations.Nop().Args);
             yield return request.PostAndWait(onSuccess);
         }
 

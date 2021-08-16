@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections;
 using UnityEngine.TestTools;
 using Chromia.Postchain.Ft3;
@@ -15,6 +16,21 @@ public class AuthDescriptorRuleTest
 
     private void DefaultErrorHandler(string error) { }
     private void EmptyCallback() { }
+
+    private IEnumerator AddAuthDescriptorTo(Account account, User adminUser, User user, Action onSuccess)
+    {
+        var signers = new List<byte[]>();
+        signers.AddRange(adminUser.AuthDescriptor.Signers);
+        signers.AddRange(user.AuthDescriptor.Signers);
+
+        yield return blockchain.TransactionBuilder()
+            .Add(AccountOperations.AddAuthDescriptor(account.Id, adminUser.AuthDescriptor.ID, user.AuthDescriptor))
+            .Build(signers.ToArray())
+            .Sign(adminUser.KeyPair)
+            .Sign(user.KeyPair)
+            .PostAndWait(onSuccess)
+        ;
+    }
 
     public IEnumerator SourceAccount(Blockchain blockchain, User user, Asset asset, Action<Account> onSuccess)
     {
@@ -374,7 +390,7 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => destAccount = _account);
 
         // add expiring auth descriptor to the account
-        yield return srcAccount1.AddAuthDescriptor(user2.AuthDescriptor, EmptyCallback);
+        yield return AddAuthDescriptorTo(srcAccount1, user1, user2, EmptyCallback);
 
         // get the same account, but initialized with user2
         // object which contains expiring auth descriptor
@@ -410,8 +426,8 @@ public class AuthDescriptorRuleTest
         Account destAccount = null;
         yield return DestinationAccount(blockchain, (Account _account) => destAccount = _account);
 
-        yield return srcAccount1.AddAuthDescriptor(user2.AuthDescriptor, EmptyCallback);
-        yield return srcAccount1.AddAuthDescriptor(user3.AuthDescriptor, EmptyCallback);
+        yield return AddAuthDescriptorTo(srcAccount1, user1, user2, EmptyCallback);
+        yield return AddAuthDescriptorTo(srcAccount1, user1, user3, EmptyCallback);
 
         Account srcAccount2 = null;
         yield return blockchain.NewSession(user2).GetAccountById(srcAccount1.GetID(), (Account _account) => srcAccount2 = _account);
@@ -441,8 +457,8 @@ public class AuthDescriptorRuleTest
         Account account = null;
         yield return SourceAccount(blockchain, user1, asset, (Account _account) => account = _account);
 
-        yield return account.AddAuthDescriptor(user2.AuthDescriptor, EmptyCallback);
-        yield return account.AddAuthDescriptor(user3.AuthDescriptor, EmptyCallback);
+        yield return AddAuthDescriptorTo(account, user1, user2, EmptyCallback);
+        yield return AddAuthDescriptorTo(account, user1, user3, EmptyCallback);
 
         yield return account.Sync();
 

@@ -25,7 +25,7 @@ public class TestUtil
     {
         var gtv = new object[] {
             "B",
-            chainId
+            Chromia.Postchain.Ft3.Util.HexStringToBuffer(chainId)
         };
         var hash = PostchainUtil.HashGTV(gtv);
         return Chromia.Postchain.Ft3.Util.ByteArrayToString(hash);

@@ -1,4 +1,4 @@
-<run wipe-db="true">
+<run wipe-db="false">
     <nodes>
         <config src="node-config.properties" add-signers="true" />
         <test-config src="node-config-test.properties"/>
@@ -11,12 +11,13 @@
 	              <arg key="my_blockchain_name"><string>Unity FT3</string></arg>
 	              <arg key="my_blockchain_website"><string>https://chromia.com</string></arg>
 	              <arg key="my_blockchain_description"><string>Unity FT3</string></arg>
-	              <arg key="rate_limit_active"><int>0</int></arg>
+	              <arg key="rate_limit_active"><int>1</int></arg>
 	              <arg key="rate_limit_max_points"><int>10</int></arg>
-	              <arg key="rate_limit_recovery_time"><int>30000</int></arg>
-	              <arg key="rate_limit_points_at_account_creation"><int>5</int></arg>
+	              <arg key="rate_limit_recovery_time"><int>5000</int></arg>
+	              <arg key="rate_limit_points_at_account_creation"><int>1</int></arg>
 	            </args>
                 </app>
+                <gtv src="config.template.xml"/>
             </config>
         </chain>
     </chains>

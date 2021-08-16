@@ -4,11 +4,13 @@ using UnityEngine.TestTools;
 using Chromia.Postchain.Ft3;
 using NUnit.Framework;
 using System;
+using System.Linq;
 
 public class RateLimitTest
 {
-    const int REQUEST_MAX_COUNT = 0;
-    const int RECOVERY_TIME = 0;
+    const int REQUEST_MAX_COUNT = 10;
+    const int RECOVERY_TIME = 5000;
+    const int POINTS_AT_ACCOUNT_CREATION = 1;
     private Blockchain blockchain;
 
     private IEnumerator SetupBlockchain()
@@ -46,7 +48,7 @@ public class RateLimitTest
         yield return builder.Build((Account _account) => account = _account);
 
         yield return account.Sync();
-        Assert.AreEqual(0, account.RateLimit.Points);
+        Assert.AreEqual(1, account.RateLimit.Points);
     }
 
     // waits 20 seconds and gets 4 points
@@ -67,7 +69,7 @@ public class RateLimitTest
         yield return RateLimit.ExecFreeOperation(account.GetID(), blockchain, EmptyCallback); // used to calculate the last block's timestamp (previous block).
         // check the balance
         yield return account.Sync();
-        Assert.AreEqual(8, account.RateLimit.Points); // 20 seconds / 5s recovery time
+        Assert.AreEqual(4 + POINTS_AT_ACCOUNT_CREATION, account.RateLimit.Points); // 20 seconds / 5s recovery time
     }
 
     // can make 4 operations
@@ -79,12 +81,13 @@ public class RateLimitTest
 
         AccountBuilder builder = AccountBuilder.CreateAccountBuilder(blockchain, user);
         builder.WithParticipants(new List<KeyPair>() { user.KeyPair });
-        builder.WithPoints(2);
+        builder.WithPoints(4);
         Account account = null;
         yield return builder.Build((Account _account) => account = _account);
+        Assert.NotNull(account);
 
         bool successful = false;
-        yield return MakeRequests(blockchain, account, 4, () => successful = true);
+        yield return MakeRequests(account, 4 + POINTS_AT_ACCOUNT_CREATION, () => successful = true);
         Assert.True(successful);
 
         yield return account.Sync();
@@ -100,35 +103,46 @@ public class RateLimitTest
 
         AccountBuilder builder = AccountBuilder.CreateAccountBuilder(blockchain, user);
         builder.WithParticipants(new List<KeyPair>() { user.KeyPair });
-        builder.WithPoints(2);
+        builder.WithPoints(4);
         Account account = null;
         yield return builder.Build((Account _account) => account = _account);
 
         bool successful = false;
-        yield return MakeRequests(blockchain, account, 4, () => successful = true);
+        yield return MakeRequests(account, 4 + POINTS_AT_ACCOUNT_CREATION, () => successful = true);
         Assert.True(successful);
 
         yield return account.Sync();
 
         successful = false;
-        yield return MakeRequests(blockchain, account, 8, () => successful = true);
+        yield return MakeRequests(account, 8, () => successful = true);
         Assert.False(successful);
     }
 
 
-    public IEnumerator MakeRequests(Blockchain blockchain, Account account, int requests, Action onSuccess)
+    public IEnumerator MakeRequests(Account account, int requests, Action onSuccess)
     {
-        var request = blockchain.Connection.NewTransaction(account.Session.User.AuthDescriptor.Signers.ToArray(),
-         (string error) => { UnityEngine.Debug.Log(error); });
+        var txBuilder = blockchain.TransactionBuilder();
+        var signers = new List<byte[]>();
+        var users = new List<User>();
+        signers.AddRange(account.Session.User.AuthDescriptor.Signers);
 
         for (int i = 0; i < requests; i++)
         {
-            var disposableKeypair = TestUser.SingleSig();
-            var op = AccountOperations.AddAuthDescriptor(account.Session.User.AuthDescriptor.ID, account.Session.User.AuthDescriptor.ID, disposableKeypair.AuthDescriptor);
-            request.AddOperation(op.Name, op.Args);
+            var user = TestUser.SingleSig();
+            signers.AddRange(user.AuthDescriptor.Signers);
+            users.Add(user);
+
+            txBuilder.Add(AccountOperations.AddAuthDescriptor(account.Id, account.Session.User.AuthDescriptor.ID, user.AuthDescriptor));
         }
 
-        request.Sign(account.Session.User.KeyPair.PrivKey, account.Session.User.KeyPair.PubKey);
-        yield return request.PostAndWait(onSuccess);
+        var tx = txBuilder.Build(signers.ToArray());
+        tx.Sign(account.Session.User.KeyPair);
+
+        foreach (var user in users)
+        {
+            tx.Sign(user.KeyPair);
+        }
+
+        yield return tx.PostAndWait(onSuccess);
     }
 }

@@ -21,6 +21,14 @@ namespace Chromia.Postchain.Ft3
             this.Id = HashId();
         }
 
+        [JsonConstructor]
+        public Asset(string id, string name, string issuing_chain_rid)
+        {
+            this.Id = id;
+            this.Name = name;
+            this.IssuingChainRid = issuing_chain_rid;
+        }
+
         private string HashId()
         {
             var body = new List<object>() {
@@ -49,13 +57,13 @@ namespace Chromia.Postchain.Ft3
         {
             yield return blockchain.Query<Asset[]>("ft3.get_asset_by_name", new List<(string, object)>() { ("name", name) }.ToArray(),
             (Asset[] assets) => { onSuccess(assets); },
-            (string error) => { });
+            (string error) => { UnityEngine.Debug.Log(error); });
         }
 
         public static IEnumerator GetById(string id, Blockchain blockchain, Action<Asset> onSuccess)
         {
             yield return blockchain.Query<Asset>("ft3.get_asset_by_id", new List<(string, object)>() { ("asset_id", id) }.ToArray(),
-            (Asset asset) => { onSuccess(asset); },
+            onSuccess,
             (string error) => { });
         }
 
