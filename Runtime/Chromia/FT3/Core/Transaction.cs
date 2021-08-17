@@ -29,7 +29,7 @@ namespace Chromia.Postchain.Ft3
             yield return this._tx.PostAndWait(onSuccess);
         }
 
-        public string Raw()
+        public byte[] Raw()
         {
             return this._tx.Encode();
         }

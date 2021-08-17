@@ -2,31 +2,34 @@ using Cryptography.ECDSA;
 using System;
 using System.Collections;
 
-using UnityEngine;
 
 namespace Chromia.Postchain.Client.Unity
 {
-    public class TxStatusResponse
-    {
-        public string status = "";
-        public string rejectReason = "";
-    }
-
     public class PostchainTransaction
     {
-        public bool sent = false;
-        public bool error = false;
-        public string errorMessage = "";
+        ///<summary>
+        ///Status response class used for WaitConfirmation.
+        ///</summary>
+        private class TxStatusResponse
+        {
+            public string status = "";
+            public string rejectReason = "";
+        }
 
-        internal Gtx GtxObject;
+        ///<summary>
+        ///Indicates wether the transaction has been sent already.
+        ///</summary>
+        public bool sent {get; private set;} = false;
+
+        private Gtx _gtxObject;
         private string _baseUrl;
         private string _brid;
+        private bool _error;
         private Action<string> _onError;
-
 
         internal PostchainTransaction(Gtx gtx, string baseUrl, string brid, Action<string> onError)
         {
-            this.GtxObject = gtx;
+            this._gtxObject = gtx;
             this._baseUrl = baseUrl;
             this._brid = brid;
             this._onError = onError;
@@ -39,51 +42,58 @@ namespace Chromia.Postchain.Client.Unity
         ///<param name = "args">Array of object parameters. For example {"Hamburg", 42}</param>
         public void AddOperation(string name, params object[] args)
         {
-            this.GtxObject.AddOperationToGtx(name, args);
+            this._gtxObject.AddOperationToGtx(name, args);
         }
 
         ///<summary>
-        ///Commit the Transaction and send it to the blockchain.
+        ///Commit the transaction and send it to the blockchain asynchronously.
+        ///Fails if transaction as already been sent.
         ///</summary>
-        ///<returns>Task, which returns null if it was succesful or the error message if not.</returns>
+        ///<returns>Unity coroutine enumerator.</returns>
         public IEnumerator Post()
         {
             if (this.sent)
             {
-                Debug.LogError("Tried to send tx twice");
+                this._onError("Tried to send tx twice");
             }
             else
             {
-                var payload = String.Format(@"{{""tx"": ""{0}""}}", Encode());
+                var payload = String.Format(@"{{""tx"": ""{0}""}}", Serialize());
 
                 var request = new PostchainRequestRaw(this._baseUrl, "tx/" + this._brid);
                 yield return request.Post(payload);
 
                 this.sent = true;
-                this.error = request.error;
-                this.errorMessage = request.errorMessage;
-
-                if (this.error)
+                this._error = request.error;
+                if (this._error)
                 {
-                    this._onError(this.errorMessage);
+                    this._onError(request.errorMessage);
                 }
             }
         }
+
+        ///<summary>
+        ///Commit the transaction and send it to the blockchain and waits for its confirmation.
+        ///Fails if transaction as already been sent.
+        ///</summary>
+        ///<param name = "callback">Action that gets called once the transaction has been confirmed.</param>
+        ///<returns>Unity coroutine enumerator.</returns>
         public IEnumerator PostAndWait(Action callback)
         {
             yield return Post();
             yield return WaitConfirmation();
 
-            if (this.error)
-            {
-                this._onError(this.errorMessage);
-            }
-            else
+            if (!this._error)
             {
                 callback();
             }
         }
 
+        ///<summary>
+        ///Signs the transaction with the given keypair.
+        ///</summary>
+        ///<param name = "privKey">Private key of the keypair.</param>
+        ///<param name = "pubKey">Public key of the keypair. If null, a public key will be generated from the given private key.</param>
         public void Sign(byte[] privKey, byte[] pubKey)
         {
             byte[] pub = pubKey;
@@ -91,7 +101,25 @@ namespace Chromia.Postchain.Client.Unity
             {
                 pub = Secp256K1Manager.GetPublicKey(privKey, true);
             }
-            this.GtxObject.Sign(privKey, pub);
+            this._gtxObject.Sign(privKey, pub);
+        }
+
+        ///<summary>
+        ///Serializes the transaction as a hex string.
+        ///</summary>
+        ///<returns>Encoded transaction as hex string.</returns>
+        public string Serialize()
+        {
+            return this._gtxObject.Serialize();
+        }
+
+        ///<summary>
+        ///Serializes the transaction as a buffer.
+        ///</summary>
+        ///<returns>Encoded transaction.</returns>
+        public byte[] Encode()
+        {
+            return this._gtxObject.Encode();
         }
 
         private IEnumerator WaitConfirmation()
@@ -100,35 +128,34 @@ namespace Chromia.Postchain.Client.Unity
             yield return request.Get();
 
             var ret = request.parsedContent;
-            this.error = true;
+            this._error = true;
             switch (ret.status)
             {
                 case "confirmed":
                     {
-                        this.error = false;
-                        this.errorMessage = "";
+                        this._error = false;
                         break;
                     }
                 case "rejected":
                 case "unknown":
                     {
-                        this.errorMessage = ret.rejectReason;
+                        this._onError(ret.rejectReason);
                         break;
                     }
                 case "waiting":
                     {
-                        yield return new WaitForSeconds(0.511f);
+                        yield return new UnityEngine.WaitForSeconds(0.511f);
                         yield return WaitConfirmation();
                         break;
                     }
                 case "exception":
                     {
-                        this.errorMessage = "HTTP Exception: " + ret.rejectReason;
+                        this._onError("HTTP Exception: " + ret.rejectReason);
                         break;
                     }
                 default:
                     {
-                        this.errorMessage = "Got unexpected response from server: " + ret.status;
+                        this._onError("Got unexpected response from server: " + ret.status);
                         break;
                     }
             }
@@ -141,17 +168,12 @@ namespace Chromia.Postchain.Client.Unity
 
         private byte[] GetBufferToSign()
         {
-            return this.GtxObject.GetBufferToSign();
+            return this._gtxObject.GetBufferToSign();
         }
 
         private void AddSignature(byte[] pubKey, byte[] signature)
         {
-            this.GtxObject.AddSignature(pubKey, signature);
-        }
-
-        public string Encode()
-        {
-            return this.GtxObject.Serialize();
+            this._gtxObject.AddSignature(pubKey, signature);
         }
     }
 }

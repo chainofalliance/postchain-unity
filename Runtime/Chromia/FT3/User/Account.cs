@@ -144,14 +144,12 @@ namespace Chromia.Postchain.Ft3
             signers.AddRange(user.AuthDescriptor.Signers);
             signers.AddRange(authDescriptor.Signers);
 
-            var tx = blockchain.TransactionBuilder()
+            return blockchain.TransactionBuilder()
                 .Add(AccountDevOperations.Register(user.AuthDescriptor))
                 .Add(AccountOperations.AddAuthDescriptor(user.AuthDescriptor.ID, user.AuthDescriptor.ID, authDescriptor))
                 .Build(signers.ToArray(), null)
                 .Sign(user.KeyPair)
                 .Raw();
-
-            return Util.HexStringToBuffer(tx);
         }
 
         public static byte[] RawTransactionAddAuthDescriptor(string accountId, User user, AuthDescriptor authDescriptor, Blockchain blockchain)
@@ -160,13 +158,11 @@ namespace Chromia.Postchain.Ft3
             signers.AddRange(user.AuthDescriptor.Signers);
             signers.AddRange(authDescriptor.Signers);
 
-            var tx = blockchain.TransactionBuilder()
+            return blockchain.TransactionBuilder()
                 .Add(AccountOperations.AddAuthDescriptor(user.AuthDescriptor.ID, user.AuthDescriptor.ID, authDescriptor))
                 .Build(signers.ToArray(), null)
                 .Sign(user.KeyPair)
                 .Raw();
-
-            return Util.HexStringToBuffer(tx);
         }
 
         public static IEnumerator GetByIds(string[] ids, BlockchainSession session, Action<Account[]> onSuccess, Action<string> onError)

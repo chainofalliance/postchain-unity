@@ -7,7 +7,6 @@ using UnityEngine;
 
 namespace Chromia.Postchain.Client
 {
-
     public class BlockchainClient : MonoBehaviour
     {
         public string BlockchainRID { get { return _blockchainRID; } }
@@ -17,6 +16,7 @@ namespace Chromia.Postchain.Client
         [SerializeField] private int _chainId;
         [SerializeField] private string _baseURL;
 
+        /// <inheritdoc />
         void Start()
         {
             if (String.IsNullOrEmpty(this._blockchainRID))
@@ -25,6 +25,11 @@ namespace Chromia.Postchain.Client
             }
         }
 
+        ///<summary>
+        ///Sets parameter to connect to blockchain.
+        ///</summary>
+        ///<param name = "blockchainRID">The blockchain RID of the dapp.</param>
+        ///<param name = "baseURL">Location of the blockchain.</param>
         public void Setup(string blockchainRID, string baseURL)
         {
             this._blockchainRID = blockchainRID;
@@ -34,8 +39,9 @@ namespace Chromia.Postchain.Client
         ///<summary>
         ///Create a new Transaction.
         ///</summary>
-        ///<param name = "signers">Array of signers (can be null).</param>
-        ///<returns>New Transaction object.</returns>
+        ///<param name = "signers">Array of signers. Can be empty and set later.</param>
+        ///<param name = "onError">Action that gets called in case of any error with the transaction.</param>
+        ///<returns>New PostchainTransaction object.</returns>
         public PostchainTransaction NewTransaction(byte[][] signers, Action<string> onError)
         {
             Gtx newGtx = new Gtx(this._blockchainRID);
@@ -48,6 +54,14 @@ namespace Chromia.Postchain.Client
             return new PostchainTransaction(newGtx, this._baseURL, this._blockchainRID, onError);
         }
 
+        ///<summary>
+        ///Queries data from the blockchain.
+        ///</summary>
+        ///<param name = "queryName">Name of the query in RELL.</param>
+        ///<param name = "queryObject">Parameters of the query.</param>
+        ///<param name = "onSuccess">Action that gets called when the query succeeds. Passes return value as parameter.</param>
+        ///<param name = "onError">Action that gets called if any error occures while querying from blockchain. Passes error message as parameter.</param>
+        ///<returns>Unity coroutine enumerator.</returns>
         public IEnumerator Query<T>(string queryName, (string name, object content)[] queryObject, Action<T> onSuccess, Action<string> onError)
         {
             var request = new PostchainQuery<T>(this._baseURL, this._blockchainRID);
