@@ -14,7 +14,7 @@ public class AuthDescriptorRuleTest
         yield return BlockchainUtil.GetDefaultBlockchain((Blockchain _blockchain) => { blockchain = _blockchain; });
     }
 
-    private void DefaultErrorHandler(string error) { }
+    private void DefaultErrorHandler(string error) { UnityEngine.Debug.Log(error); }
     private void EmptyCallback() { }
 
     private IEnumerator AddAuthDescriptorTo(Account account, User adminUser, User user, Action onSuccess)
@@ -25,7 +25,7 @@ public class AuthDescriptorRuleTest
 
         yield return blockchain.TransactionBuilder()
             .Add(AccountOperations.AddAuthDescriptor(account.Id, adminUser.AuthDescriptor.ID, user.AuthDescriptor))
-            .Build(signers.ToArray())
+            .Build(signers.ToArray(), DefaultErrorHandler)
             .Sign(adminUser.KeyPair)
             .Sign(user.KeyPair)
             .PostAndWait(onSuccess)
@@ -51,7 +51,8 @@ public class AuthDescriptorRuleTest
         yield return Asset.Register(
             TestUtil.GenerateAssetName(),
             TestUtil.GenerateId(),
-            blockchain, onSuccess
+            blockchain, onSuccess,
+            DefaultErrorHandler
         );
     }
 
@@ -70,11 +71,11 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true, DefaultErrorHandler);
         Assert.True(successful);
 
         successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 20, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 20, () => successful = true, DefaultErrorHandler);
         Assert.True(successful);
     }
 
@@ -93,11 +94,11 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true, DefaultErrorHandler);
         Assert.True(successful);
 
         successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 20, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 20, () => successful = true, DefaultErrorHandler);
         Assert.False(successful);
     }
 
@@ -116,7 +117,7 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true, DefaultErrorHandler);
         Assert.False(successful);
     }
 
@@ -134,7 +135,7 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true, DefaultErrorHandler);
         Assert.True(successful);
     }
 
@@ -153,7 +154,7 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true, DefaultErrorHandler);
         Assert.True(successful);
     }
 
@@ -172,7 +173,7 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true, DefaultErrorHandler);
         Assert.False(successful);
     }
 
@@ -191,7 +192,7 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true, DefaultErrorHandler);
         Assert.False(successful);
     }
 
@@ -210,7 +211,7 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true, DefaultErrorHandler);
         Assert.True(successful);
     }
 
@@ -229,7 +230,7 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true, DefaultErrorHandler);
         Assert.False(successful);
     }
 
@@ -248,7 +249,7 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true, DefaultErrorHandler);
         Assert.True(successful);
     }
 
@@ -267,7 +268,7 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true, DefaultErrorHandler);
         Assert.True(successful);
     }
 
@@ -286,7 +287,7 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true, DefaultErrorHandler);
         Assert.False(successful);
     }
 
@@ -309,7 +310,7 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true, DefaultErrorHandler);
         Assert.False(successful);
     }
 
@@ -332,7 +333,7 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true);
+        yield return account1.Transfer(account2.GetID(), asset.Id, 10, () => successful = true, DefaultErrorHandler);
         Assert.True(successful);
     }
 
@@ -353,22 +354,22 @@ public class AuthDescriptorRuleTest
         yield return DestinationAccount(blockchain, (Account _account) => destAccount = _account);
 
         // add expiring auth descriptor to the account
-        yield return srcAccount1.AddAuthDescriptor(user2.AuthDescriptor, EmptyCallback);
+        yield return srcAccount1.AddAuthDescriptor(user2.AuthDescriptor, EmptyCallback, DefaultErrorHandler);
 
         // get the same account, but initialized with user2
         // object which contains expiring auth descriptor
         Account srcAccount2 = null;
-        yield return blockchain.NewSession(user2).GetAccountById(srcAccount1.GetID(), (Account _account) => srcAccount2 = _account);
+        yield return blockchain.NewSession(user2).GetAccountById(srcAccount1.GetID(), (Account _account) => srcAccount2 = _account, DefaultErrorHandler);
 
-        yield return srcAccount2.Transfer(destAccount.GetID(), asset.Id, 10, EmptyCallback);
+        yield return srcAccount2.Transfer(destAccount.GetID(), asset.Id, 10, EmptyCallback, DefaultErrorHandler);
 
         // account descriptor used by user2 object has expired.
         // this operation call will delete it.
         // any other operation, which calls require_auth internally
         // would also delete expired auth descriptor.
-        yield return srcAccount1.Transfer(destAccount.GetID(), asset.Id, 30, EmptyCallback);
+        yield return srcAccount1.Transfer(destAccount.GetID(), asset.Id, 30, EmptyCallback, DefaultErrorHandler);
 
-        yield return srcAccount1.Sync();
+        yield return srcAccount1.Sync(EmptyCallback, DefaultErrorHandler);
 
         Assert.AreEqual(1, srcAccount1.AuthDescriptor.Count);
     }
@@ -395,16 +396,16 @@ public class AuthDescriptorRuleTest
         // get the same account, but initialized with user2
         // object which contains expiring auth descriptor
         Account srcAccount2 = null;
-        yield return blockchain.NewSession(user2).GetAccountById(srcAccount1.GetID(), (Account _account) => srcAccount2 = _account);
+        yield return blockchain.NewSession(user2).GetAccountById(srcAccount1.GetID(), (Account _account) => srcAccount2 = _account, DefaultErrorHandler);
 
         // perform transfer with expiring auth descriptor.
         // auth descriptor didn't expire, because it's only used 1 out of 10 times.
-        yield return srcAccount2.Transfer(destAccount.GetID(), asset.Id, 10, EmptyCallback);
+        yield return srcAccount2.Transfer(destAccount.GetID(), asset.Id, 10, EmptyCallback, DefaultErrorHandler);
 
         // perform transfer using auth descriptor without rules
-        yield return srcAccount1.Transfer(destAccount.GetID(), asset.Id, 10, EmptyCallback);
+        yield return srcAccount1.Transfer(destAccount.GetID(), asset.Id, 10, EmptyCallback, DefaultErrorHandler);
 
-        yield return srcAccount1.Sync();
+        yield return srcAccount1.Sync(EmptyCallback, DefaultErrorHandler);
 
         Assert.AreEqual(2, srcAccount1.AuthDescriptor.Count);
     }
@@ -430,14 +431,14 @@ public class AuthDescriptorRuleTest
         yield return AddAuthDescriptorTo(srcAccount1, user1, user3, EmptyCallback);
 
         Account srcAccount2 = null;
-        yield return blockchain.NewSession(user2).GetAccountById(srcAccount1.GetID(), (Account _account) => srcAccount2 = _account);
+        yield return blockchain.NewSession(user2).GetAccountById(srcAccount1.GetID(), (Account _account) => srcAccount2 = _account, DefaultErrorHandler);
 
-        yield return srcAccount2.Transfer(destAccount.GetID(), asset.Id, 50, EmptyCallback);
+        yield return srcAccount2.Transfer(destAccount.GetID(), asset.Id, 50, EmptyCallback, DefaultErrorHandler);
 
         // this call will trigger deletion of expired auth descriptor (attached to user2)
-        yield return srcAccount1.Transfer(destAccount.GetID(), asset.Id, 100, EmptyCallback);
+        yield return srcAccount1.Transfer(destAccount.GetID(), asset.Id, 100, EmptyCallback, DefaultErrorHandler);
 
-        yield return srcAccount1.Sync();
+        yield return srcAccount1.Sync(EmptyCallback, DefaultErrorHandler);
 
         Assert.AreEqual(2, srcAccount1.AuthDescriptor.Count);
     }
@@ -460,7 +461,7 @@ public class AuthDescriptorRuleTest
         yield return AddAuthDescriptorTo(account, user1, user2, EmptyCallback);
         yield return AddAuthDescriptorTo(account, user1, user3, EmptyCallback);
 
-        yield return account.Sync();
+        yield return account.Sync(EmptyCallback, DefaultErrorHandler);
 
         Assert.AreEqual(3, account.AuthDescriptor.Count);
     }
@@ -480,13 +481,13 @@ public class AuthDescriptorRuleTest
         Account account = null;
         yield return SourceAccount(blockchain, user1, asset, (Account _account) => account = _account);
 
-        yield return account.AddAuthDescriptor(user2.AuthDescriptor, EmptyCallback);
-        yield return account.AddAuthDescriptor(user3.AuthDescriptor, EmptyCallback);
+        yield return account.AddAuthDescriptor(user2.AuthDescriptor, EmptyCallback, DefaultErrorHandler);
+        yield return account.AddAuthDescriptor(user3.AuthDescriptor, EmptyCallback, DefaultErrorHandler);
 
-        yield return account.DeleteAllAuthDescriptorsExclude(user1.AuthDescriptor, EmptyCallback);
+        yield return account.DeleteAllAuthDescriptorsExclude(user1.AuthDescriptor, EmptyCallback, DefaultErrorHandler);
         Assert.AreEqual(1, account.AuthDescriptor.Count);
 
-        yield return account.Sync();
+        yield return account.Sync(EmptyCallback, DefaultErrorHandler);
 
         Assert.AreEqual(1, account.AuthDescriptor.Count);
     }
@@ -508,7 +509,7 @@ public class AuthDescriptorRuleTest
         yield return SourceAccount(blockchain, user2, asset, (Account _account) => account2 = _account);
 
         bool successful = false;
-        yield return account1.DeleteAuthDescriptor(user2.AuthDescriptor, () => successful = true);
+        yield return account1.DeleteAuthDescriptor(user2.AuthDescriptor, () => successful = true, DefaultErrorHandler);
         Assert.False(successful);
     }
 
@@ -525,8 +526,8 @@ public class AuthDescriptorRuleTest
 
         Account account = null;
         yield return SourceAccount(blockchain, user1, asset, (Account _account) => account = _account);
-        yield return account.AddAuthDescriptor(user2.AuthDescriptor, EmptyCallback);
-        yield return account.DeleteAuthDescriptor(user2.AuthDescriptor, EmptyCallback);
+        yield return account.AddAuthDescriptor(user2.AuthDescriptor, EmptyCallback, DefaultErrorHandler);
+        yield return account.DeleteAuthDescriptor(user2.AuthDescriptor, EmptyCallback, DefaultErrorHandler);
 
         Assert.AreEqual(1, account.AuthDescriptor.Count);
     }

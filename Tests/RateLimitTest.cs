@@ -18,7 +18,7 @@ public class RateLimitTest
         yield return BlockchainUtil.GetDefaultBlockchain((Blockchain _blockchain) => { blockchain = _blockchain; });
     }
 
-    private void DefaultErrorHandler(string error) { }
+    private void DefaultErrorHandler(string error) { UnityEngine.Debug.Log(error); }
     private void EmptyCallback() { }
 
     // Should have a limit of 10 requests per minute
@@ -47,7 +47,7 @@ public class RateLimitTest
         Account account = null;
         yield return builder.Build((Account _account) => account = _account);
 
-        yield return account.Sync();
+        yield return account.Sync(EmptyCallback, DefaultErrorHandler);
         Assert.AreEqual(1, account.RateLimit.Points);
     }
 
@@ -65,10 +65,10 @@ public class RateLimitTest
 
         yield return new UnityEngine.WaitForSeconds(20);
 
-        yield return RateLimit.ExecFreeOperation(account.GetID(), blockchain, EmptyCallback); // used to make one block
-        yield return RateLimit.ExecFreeOperation(account.GetID(), blockchain, EmptyCallback); // used to calculate the last block's timestamp (previous block).
+        yield return RateLimit.ExecFreeOperation(account.GetID(), blockchain, EmptyCallback, DefaultErrorHandler); // used to make one block
+        yield return RateLimit.ExecFreeOperation(account.GetID(), blockchain, EmptyCallback, DefaultErrorHandler); // used to calculate the last block's timestamp (previous block).
         // check the balance
-        yield return account.Sync();
+        yield return account.Sync(EmptyCallback, DefaultErrorHandler);
         Assert.AreEqual(4 + POINTS_AT_ACCOUNT_CREATION, account.RateLimit.Points); // 20 seconds / 5s recovery time
     }
 
@@ -90,7 +90,7 @@ public class RateLimitTest
         yield return MakeRequests(account, 4 + POINTS_AT_ACCOUNT_CREATION, () => successful = true);
         Assert.True(successful);
 
-        yield return account.Sync();
+        yield return account.Sync(EmptyCallback, DefaultErrorHandler);
         Assert.AreEqual(0, account.RateLimit.Points);
     }
 
@@ -111,7 +111,7 @@ public class RateLimitTest
         yield return MakeRequests(account, 4 + POINTS_AT_ACCOUNT_CREATION, () => successful = true);
         Assert.True(successful);
 
-        yield return account.Sync();
+        yield return account.Sync(EmptyCallback, DefaultErrorHandler);
 
         successful = false;
         yield return MakeRequests(account, 8, () => successful = true);
@@ -135,7 +135,7 @@ public class RateLimitTest
             txBuilder.Add(AccountOperations.AddAuthDescriptor(account.Id, account.Session.User.AuthDescriptor.ID, user.AuthDescriptor));
         }
 
-        var tx = txBuilder.Build(signers.ToArray());
+        var tx = txBuilder.Build(signers.ToArray(), DefaultErrorHandler);
         tx.Sign(account.Session.User.KeyPair);
 
         foreach (var user in users)

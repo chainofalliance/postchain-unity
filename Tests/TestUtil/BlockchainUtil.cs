@@ -4,7 +4,7 @@ using System;
 
 public class BlockchainUtil
 {
-    const string CHAINID = "EB9326199CE87797116BF6019EE5234D5AF2C51C2F45E4098544DC8B83F97D3D";
+    const string CHAINID = "5759EB34C39B4D34744EC324DFEFAC61526DCEB37FB05D22EB7C95A184380205";
     const string NODEURL = "http://localhost:7740";
 
     public static IEnumerator GetDefaultBlockchain(Action<Blockchain> onSuccess)

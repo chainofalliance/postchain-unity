@@ -1,5 +1,4 @@
 using Chromia.Postchain.Client;
-using System.Collections.Generic;
 using System.Collections;
 using Newtonsoft.Json;
 using System;
@@ -31,47 +30,38 @@ namespace Chromia.Postchain.Ft3
 
         private string HashId()
         {
-            var body = new List<object>() {
+            var body = new object[] {
                 this.Name,
                 Util.HexStringToBuffer(this.IssuingChainRid)
             };
-            var hash = PostchainUtil.HashGTV(body.ToArray());
+
+            var hash = PostchainUtil.HashGTV(body);
             return Util.ByteArrayToString(hash);
         }
 
-        public static IEnumerator Register(string name, string chainId, Blockchain blockchain, Action<Asset> onSuccess)
+        public static IEnumerator Register(string name, string chainId, Blockchain blockchain, Action<Asset> onSuccess, Action<string> onError)
         {
-            var request = blockchain.Connection.NewTransaction(new byte[][] { }, (string error) => { UnityEngine.Debug.Log(error); });
-            request.AddOperation("ft3.dev_register_asset", name, chainId);
-            yield return request.PostAndWait(
-                () =>
-                {
-                    onSuccess(
-                        new Asset(name, chainId)
-                    );
-                }
-            );
+            yield return blockchain.TransactionBuilder()
+                .Add(Operation.Op("ft3.dev_register_asset", name, chainId))
+                .Build(new byte[][] { }, onError)
+                .PostAndWait(() => onSuccess(new Asset(name, chainId)));
         }
 
-        public static IEnumerator GetByName(string name, Blockchain blockchain, Action<Asset[]> onSuccess)
+        public static IEnumerator GetByName(string name, Blockchain blockchain, Action<Asset[]> onSuccess, Action<string> onError)
         {
-            yield return blockchain.Query<Asset[]>("ft3.get_asset_by_name", new List<(string, object)>() { ("name", name) }.ToArray(),
-            (Asset[] assets) => { onSuccess(assets); },
-            (string error) => { UnityEngine.Debug.Log(error); });
+            yield return blockchain.Query<Asset[]>("ft3.get_asset_by_name",
+                new (string, object)[] { ("name", name) }, onSuccess, onError);
         }
 
-        public static IEnumerator GetById(string id, Blockchain blockchain, Action<Asset> onSuccess)
+        public static IEnumerator GetById(string id, Blockchain blockchain, Action<Asset> onSuccess, Action<string> onError)
         {
-            yield return blockchain.Query<Asset>("ft3.get_asset_by_id", new List<(string, object)>() { ("asset_id", id) }.ToArray(),
-            onSuccess,
-            (string error) => { });
+            yield return blockchain.Query<Asset>("ft3.get_asset_by_id",
+                new (string, object)[] { ("asset_id", id) }, onSuccess, onError);
         }
 
-        public static IEnumerator GetAssets(Blockchain blockchain, Action<Asset[]> onSuccess)
+        public static IEnumerator GetAssets(Blockchain blockchain, Action<Asset[]> onSuccess, Action<string> onError)
         {
-            yield return blockchain.Query<Asset[]>("ft3.get_all_assets", new List<(string, object)>().ToArray(),
-            (Asset[] assets) => { onSuccess(assets); },
-            (string error) => { });
+            yield return blockchain.Query<Asset[]>("ft3.get_all_assets", null, onSuccess, onError);
         }
     }
 }

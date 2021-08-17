@@ -13,7 +13,7 @@ public class BlockchainTest
         yield return BlockchainUtil.GetDefaultBlockchain((Blockchain _blockchain) => { blockchain = _blockchain; });
     }
 
-    private void DefaultErrorHandler(string error) { }
+    private void DefaultErrorHandler(string error) { UnityEngine.Debug.Log(error); }
     private void EmptyCallback() { }
 
     // should provide info
@@ -36,8 +36,8 @@ public class BlockchainTest
 
         Account account = null;
         Account foundAccount = null;
-        yield return blockchain.RegisterAccount(user.AuthDescriptor, user, (Account _account) => { account = _account; });
-        yield return session.GetAccountById(account.Id, (Account _account) => { foundAccount = _account; });
+        yield return blockchain.RegisterAccount(user.AuthDescriptor, user, (Account _account) => { account = _account; }, DefaultErrorHandler);
+        yield return session.GetAccountById(account.Id, (Account _account) => { foundAccount = _account; }, DefaultErrorHandler);
 
         Assert.AreEqual(account.Id.ToUpper(), foundAccount.Id.ToUpper());
     }
@@ -57,7 +57,7 @@ public class BlockchainTest
         yield return accountBuilder.Build((Account _account) => { account = _account; });
 
         yield return blockchain.GetAccountsByParticipantId(
-            Util.ByteArrayToString(user.KeyPair.PubKey), user, (Account[] _accounts) => { foundAccounts = _accounts; }
+            Util.ByteArrayToString(user.KeyPair.PubKey), user, (Account[] _accounts) => { foundAccounts = _accounts; }, DefaultErrorHandler
         );
 
         Assert.AreEqual(1, foundAccounts.Length);
@@ -79,7 +79,7 @@ public class BlockchainTest
         yield return accountBuilder.Build((Account _account) => { account = _account; });
 
         yield return blockchain.GetAccountsByAuthDescriptorId(
-            user.AuthDescriptor.ID, user, (Account[] _accounts) => { foundAccounts = _accounts; }
+            user.AuthDescriptor.ID, user, (Account[] _accounts) => { foundAccounts = _accounts; }, DefaultErrorHandler
         );
 
         Assert.AreEqual(1, foundAccounts.Length);
@@ -93,8 +93,8 @@ public class BlockchainTest
         yield return SetupBlockchain();
 
         var chainId1 = TestUtil.GenerateId();
-        yield return blockchain.LinkChain(chainId1, EmptyCallback);
-        yield return blockchain.IsLinkedWithChain(chainId1, (bool isLinked) => Assert.True(isLinked));
+        yield return blockchain.LinkChain(chainId1, EmptyCallback, DefaultErrorHandler);
+        yield return blockchain.IsLinkedWithChain(chainId1, (bool isLinked) => Assert.True(isLinked), DefaultErrorHandler);
     }
 
     // should be able to link multiple chains
@@ -105,8 +105,8 @@ public class BlockchainTest
         var chainId1 = TestUtil.GenerateId();
         var chainId2 = TestUtil.GenerateId();
 
-        yield return blockchain.LinkChain(chainId1, EmptyCallback);
-        yield return blockchain.LinkChain(chainId2, EmptyCallback);
+        yield return blockchain.LinkChain(chainId1, EmptyCallback, DefaultErrorHandler);
+        yield return blockchain.LinkChain(chainId2, EmptyCallback, DefaultErrorHandler);
 
         yield return blockchain.GetLinkedChainsIds(
             (string[] linkedChains) =>
@@ -124,7 +124,7 @@ public class BlockchainTest
     {
         yield return SetupBlockchain();
         yield return blockchain.IsLinkedWithChain(TestUtil.GenerateId(),
-            (bool isLinked) => Assert.False(isLinked)
+            (bool isLinked) => Assert.False(isLinked), DefaultErrorHandler
         );
     }
 
@@ -135,9 +135,9 @@ public class BlockchainTest
         yield return SetupBlockchain();
         Asset asset = null;
         yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain,
-            (Asset _asset) => asset = _asset
+            (Asset _asset) => asset = _asset, DefaultErrorHandler
         );
 
-        yield return blockchain.GetAssetById(asset.Id, (Asset _asset) => Assert.AreEqual(asset.Id.ToUpper(), _asset.Id.ToUpper()));
+        yield return blockchain.GetAssetById(asset.Id, (Asset _asset) => Assert.AreEqual(asset.Id.ToUpper(), _asset.Id.ToUpper()), DefaultErrorHandler);
     }
 }

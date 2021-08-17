@@ -48,18 +48,19 @@ namespace Chromia.Postchain.Ft3
                 hexPubs.Add(Util.ByteArrayToString(pubkey));
             }
 
-            var gtv = new List<object>(){
+            var gtv = new object[] {
                 Util.AuthTypeToString(AuthType.MultiSig),
                 hexPubs.ToArray(),
-                new List<object>()
+                new object[]
                 {
                     this.Flags.ToGTV(),
                     this.SignatureRequired,
                     hexPubs.ToArray()
-                }.ToArray(),
+                },
                 this.AuthRule?.ToGTV()
             };
-            return gtv.ToArray();
+
+            return gtv;
         }
 
         public byte[] Hash()
@@ -70,17 +71,17 @@ namespace Chromia.Postchain.Ft3
                 hexPubs.Add(Util.ByteArrayToString(pubkey));
             }
 
-            var gtv = new List<object>(){
+            var gtv = new object[] {
                 Util.AuthTypeToString(AuthType.MultiSig),
                 this.PubKeys.ToArray(),
-                new List<object>()
+                new object[]
                 {
                     this.Flags.ToGTV(),
                     this.SignatureRequired,
                     hexPubs.ToArray()
-                }.ToArray(),
+                },
                 this.AuthRule?.ToGTV()
-            }.ToArray();
+            };
 
             return PostchainUtil.HashGTV(gtv);
         }

@@ -1,5 +1,3 @@
-
-
 namespace Chromia.Postchain.Ft3
 {
     public class Operation
@@ -11,6 +9,11 @@ namespace Chromia.Postchain.Ft3
         {
             this.Name = name;
             this.Args = args;
+        }
+
+        public static Operation Op(string name, params object[] args)
+        {
+            return new Operation(name, args);
         }
     }
 }

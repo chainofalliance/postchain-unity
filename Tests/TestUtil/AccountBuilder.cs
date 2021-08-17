@@ -65,52 +65,56 @@ public class AccountBuilder
         return this;
     }
 
-    public IEnumerator Build(Action<Account> onSuccess)
+    public IEnumerator Build(Action<Account> onSuccess, Action<string> onError = null)
     {
+        if (onError == null) onError = DefaultErrorHandler;
+
         Account account = null;
 
-        yield return this.RegisterAccount((Account _account) => { account = _account; });
+        yield return this.RegisterAccount((Account _account) => account = _account, onError);
 
         if (account != null)
         {
-            yield return this.AddBalanceIfNeeded(account);
+            yield return this.AddBalanceIfNeeded(account, () => { }, onError);
             yield return this.AddPointsIfNeeded(account, (RateLimit _rateLimit) =>
             {
                 account.RateLimit = _rateLimit;
-            });
-        }
+            }, onError);
 
-        onSuccess(account);
+            onSuccess(account);
+        }
     }
     #endregion
 
     #region private
-    private IEnumerator RegisterAccount(Action<Account> onSuccess)
+    private void DefaultErrorHandler(string error) { UnityEngine.Debug.Log(error); }
+
+    private IEnumerator RegisterAccount(Action<Account> onSuccess, Action<string> onError)
     {
         yield return Account.Register(
             this.GetAuthDescriptor(),
             this._blockchain.NewSession(this._user),
-            onSuccess
+            onSuccess, onError
         );
     }
 
-    private IEnumerator AddBalanceIfNeeded(Account account)
+    private IEnumerator AddBalanceIfNeeded(Account account, Action onSuccess, Action<string> onError)
     {
         if (this._asset != null && this._balance != -1)
         {
-            yield return AssetBalance.GiveBalance(account.Id, this._asset.Id, this._balance, this._blockchain,
-            () => { });
+            yield return AssetBalance.GiveBalance(account.Id, this._asset.Id,
+                this._balance, this._blockchain, onSuccess, onError);
         }
     }
 
-    private IEnumerator AddPointsIfNeeded(Account account, Action<RateLimit> onSuccess)
+    private IEnumerator AddPointsIfNeeded(Account account, Action<RateLimit> onSuccess, Action<string> onError)
     {
         if (this._points > 0)
         {
-            yield return RateLimit.GivePoints(account.Id, this._points, this._blockchain, () => { });
+            yield return RateLimit.GivePoints(account.Id, this._points, this._blockchain, () => { }, onError);
         }
 
-        yield return RateLimit.GetByAccountRateLimit(account.Id, this._blockchain, onSuccess);
+        yield return RateLimit.GetByAccountRateLimit(account.Id, this._blockchain, onSuccess, onError);
     }
 
     private AuthDescriptor GetAuthDescriptor()

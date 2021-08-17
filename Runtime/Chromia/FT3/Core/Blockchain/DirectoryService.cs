@@ -4,5 +4,4 @@ namespace Chromia.Postchain.Ft3
     {
         ChainConnectionInfo GetChainConnectionInfo(string id);
     }
-
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System;
 
 namespace Chromia.Postchain.Ft3
 {
@@ -19,9 +20,9 @@ namespace Chromia.Postchain.Ft3
             return this;
         }
 
-        public Transaction Build(byte[][] signers)
+        public Transaction Build(byte[][] signers, Action<string> onError)
         {
-            var tx = Blockchain.Connection.NewTransaction(signers, (string error) => { });
+            var tx = Blockchain.Connection.NewTransaction(signers, onError);
             foreach (var op in _operations)
             {
                 tx.AddOperation(op.Name, op.Args);
@@ -30,9 +31,9 @@ namespace Chromia.Postchain.Ft3
             return new Transaction(tx);
         }
 
-        public Transaction BuildAndSign(User user)
+        public Transaction BuildAndSign(User user, Action<string> onError)
         {
-            return this.Build(user.AuthDescriptor.Signers.ToArray()).Sign(user.KeyPair);
+            return this.Build(user.AuthDescriptor.Signers.ToArray(), onError).Sign(user.KeyPair);
         }
     }
 }

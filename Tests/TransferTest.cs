@@ -13,7 +13,7 @@ public class TransferTest
         yield return BlockchainUtil.GetDefaultBlockchain((Blockchain _blockchain) => { blockchain = _blockchain; });
     }
 
-    private void DefaultErrorHandler(string error) { }
+    private void DefaultErrorHandler(string error) { UnityEngine.Debug.Log(error); }
     private void EmptyCallback() { }
 
     // should succeed when balance is higher than amount to transfer
@@ -22,7 +22,7 @@ public class TransferTest
     {
         yield return SetupBlockchain();
         Asset asset = null;
-        yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset);
+        yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset, DefaultErrorHandler);
 
         User user = TestUser.SingleSig();
 
@@ -37,12 +37,12 @@ public class TransferTest
         Account account2 = null;
         yield return accountBuilder2.Build((Account _account) => account2 = _account);
 
-        yield return account1.Transfer(account2.Id, asset.Id, 10, EmptyCallback);
+        yield return account1.Transfer(account2.Id, asset.Id, 10, EmptyCallback, DefaultErrorHandler);
 
         AssetBalance assetBalance1 = null;
-        yield return AssetBalance.GetByAccountAndAssetId(account1.Id, asset.Id, blockchain, (AssetBalance balance) => assetBalance1 = balance);
+        yield return AssetBalance.GetByAccountAndAssetId(account1.Id, asset.Id, blockchain, (AssetBalance balance) => assetBalance1 = balance, DefaultErrorHandler);
         AssetBalance assetBalance2 = null;
-        yield return AssetBalance.GetByAccountAndAssetId(account2.Id, asset.Id, blockchain, (AssetBalance balance) => assetBalance2 = balance);
+        yield return AssetBalance.GetByAccountAndAssetId(account2.Id, asset.Id, blockchain, (AssetBalance balance) => assetBalance2 = balance, DefaultErrorHandler);
 
         Assert.AreEqual(190, assetBalance1.Amount);
         Assert.AreEqual(10, assetBalance2.Amount);
@@ -54,7 +54,7 @@ public class TransferTest
     {
         yield return SetupBlockchain();
         Asset asset = null;
-        yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset);
+        yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset, DefaultErrorHandler);
         User user = TestUser.SingleSig();
 
         AccountBuilder accountBuilder = AccountBuilder.CreateAccountBuilder(blockchain, user);
@@ -68,7 +68,7 @@ public class TransferTest
         yield return accountBuilder2.Build((Account _account) => account2 = _account);
 
         bool successfully = false;
-        yield return account1.Transfer(account2.Id, asset.Id, 10, () => successfully = true);
+        yield return account1.Transfer(account2.Id, asset.Id, 10, () => successfully = true, DefaultErrorHandler);
         Assert.False(successfully);
     }
 
@@ -78,7 +78,7 @@ public class TransferTest
     {
         yield return SetupBlockchain();
         Asset asset = null;
-        yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset);
+        yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset, DefaultErrorHandler);
         User user = TestUser.SingleSig();
 
         AccountBuilder accountBuilder = AccountBuilder.CreateAccountBuilder(blockchain, user);
@@ -94,7 +94,7 @@ public class TransferTest
         yield return accountBuilder2.Build((Account _account) => account2 = _account);
 
         bool successfully = false;
-        yield return account1.Transfer(account2.Id, asset.Id, 10, () => successfully = true);
+        yield return account1.Transfer(account2.Id, asset.Id, 10, () => successfully = true, DefaultErrorHandler);
         Assert.False(successfully);
     }
 
@@ -104,7 +104,7 @@ public class TransferTest
     {
         yield return SetupBlockchain();
         Asset asset = null;
-        yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset);
+        yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset, DefaultErrorHandler);
 
         User user = TestUser.SingleSig();
         User user2 = TestUser.SingleSig();
@@ -128,18 +128,18 @@ public class TransferTest
 
         yield return blockchain.TransactionBuilder()
             .Add(AccountDevOperations.Register(multiSig))
-            .Build(multiSig.Signers.ToArray())
+            .Build(multiSig.Signers.ToArray(), DefaultErrorHandler)
             .Sign(user2.KeyPair)
             .Sign(user3.KeyPair)
             .PostAndWait(EmptyCallback);
 
 
-        yield return account1.Transfer(multiSig.ID, asset.Id, 10, EmptyCallback);
+        yield return account1.Transfer(multiSig.ID, asset.Id, 10, EmptyCallback, DefaultErrorHandler);
 
         AssetBalance assetBalance1 = null;
-        yield return AssetBalance.GetByAccountAndAssetId(account1.Id, asset.Id, blockchain, (AssetBalance balance) => assetBalance1 = balance);
+        yield return AssetBalance.GetByAccountAndAssetId(account1.Id, asset.Id, blockchain, (AssetBalance balance) => assetBalance1 = balance, DefaultErrorHandler);
         AssetBalance assetBalance2 = null;
-        yield return AssetBalance.GetByAccountAndAssetId(multiSig.ID, asset.Id, blockchain, (AssetBalance balance) => assetBalance2 = balance);
+        yield return AssetBalance.GetByAccountAndAssetId(multiSig.ID, asset.Id, blockchain, (AssetBalance balance) => assetBalance2 = balance, DefaultErrorHandler);
 
         Assert.AreEqual(190, assetBalance1.Amount);
         Assert.AreEqual(10, assetBalance2.Amount);
@@ -151,7 +151,7 @@ public class TransferTest
     {
         yield return SetupBlockchain();
         Asset asset = null;
-        yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset);
+        yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset, DefaultErrorHandler);
         User user = TestUser.SingleSig();
 
         AccountBuilder accountBuilder = AccountBuilder.CreateAccountBuilder(blockchain, user);
@@ -161,64 +161,9 @@ public class TransferTest
         Account account = null;
         yield return accountBuilder.Build((Account _account) => account = _account);
 
-        yield return account.BurnTokens(asset.Id, 10, EmptyCallback);
+        yield return account.BurnTokens(asset.Id, 10, EmptyCallback, DefaultErrorHandler);
         AssetBalance assetBalance = account.GetAssetById(asset.Id);
 
         Assert.AreEqual(190, assetBalance.Amount);
     }
-
-    // // should have one payment history entry if one transfer made
-    // [UnityTest]
-    // public IEnumerator TransferTestRun6()
-    // {
-    //     yield return SetupBlockchain();
-    //     Asset asset = null;
-    //     yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset);
-
-    //     User user = TestUser.SingleSig();
-
-    //     AccountBuilder accountBuilder = AccountBuilder.CreateAccountBuilder(blockchain, user);
-    //     accountBuilder.WithParticipants(new List<KeyPair>() { user.KeyPair });
-    //     accountBuilder.WithBalance(asset, 200);
-    //     accountBuilder.WithPoints(1);
-    //     Account account = null;
-    //     yield return accountBuilder.Build((Account _account) => account = _account);
-
-    //     AccountBuilder accountBuilder2 = AccountBuilder.CreateAccountBuilder(blockchain);
-    //     Account account2 = null;
-    //     yield return accountBuilder2.Build((Account _account) => account2 = _account);
-
-    //     yield return account.Transfer(account2.Id, asset.Id, 10, EmptyCallback);
-
-    //     PaymentHistoryEntryShort[] paymentHistory = yield return account.GetPaymentHistory();
-    //     Assert.AreEqual(1, paymentHistory.Length);
-    // }
-
-    // // should have two payment history entries if two transfers made
-    // [UnityTest]
-    // public IEnumerator TransferTestRun7()
-    // {
-    //     yield return SetupBlockchain();
-    //     Asset asset = null;
-    //     yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset);
-
-    //     User user = TestUser.SingleSig();
-
-    //     AccountBuilder accountBuilder = AccountBuilder.CreateAccountBuilder(blockchain, user);
-    //     accountBuilder.WithParticipants(new List<KeyPair>() { user.KeyPair });
-    //     accountBuilder.WithBalance(asset, 200);
-    //     accountBuilder.WithPoints(2);
-    //     Account account = null;
-    //     yield return accountBuilder.Build((Account _account) => account = _account);
-
-    //     AccountBuilder accountBuilder2 = AccountBuilder.CreateAccountBuilder(blockchain);
-    //     Account account2 = null;
-    //     yield return accountBuilder2.Build((Account _account) => account2 = _account);
-
-    //     yield return account.Transfer(account2.Id, asset.Id, 10);
-    //     yield return account.Transfer(account2.Id, asset.Id, 11);
-
-    //     PaymentHistoryEntryShort[] paymentHistory = yield return account.GetPaymentHistory();
-    //     Assert.AreEqual(2, paymentHistory.Length);
-    // }
 }

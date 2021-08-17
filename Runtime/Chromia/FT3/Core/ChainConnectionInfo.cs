@@ -11,5 +11,4 @@ namespace Chromia.Postchain.Ft3
             this.Url = url;
         }
     }
-
 }

@@ -1,10 +1,7 @@
-using System.Collections.Generic;
 using Newtonsoft.Json.Utilities;
 using Chromia.Postchain.Ft3;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
-using System.Linq;
 using System;
 
 public class SSOWebgl : MonoBehaviour
@@ -22,9 +19,10 @@ public class SSOWebgl : MonoBehaviour
     {
         SSO.VaultUrl = _vaultUrl;
 
-        AotHelper.EnsureList<AssetBalance.AssetBalanceQuery>();
+#if UNITY_WEBGL
         AotHelper.EnsureList<AuthDescriptorFactory.AuthDescriptorQuery>();
         AotHelper.EnsureList<Asset>();
+#endif
     }
 
     private void Start()
@@ -32,39 +30,29 @@ public class SSOWebgl : MonoBehaviour
         StartCoroutine(StartRoutine());
     }
 
+    private void SetBlockchain(Blockchain blockchain)
+    {
+        this._blockchain = blockchain;
+    }
+
+    private void DefaultErrorHandler(string error)
+    {
+        throw new Exception(error);
+    }
+
     private IEnumerator StartRoutine()
     {
         yield return ConnectToBlockchain();
         _sso = new SSO(this._blockchain, new SSOStoreLocalStorage());
 
-        yield return _sso.PendingSSO(
-            ((Account, User) ac) =>
-            {
-            },
-            () =>
-            {
-
-            }
-        );
-
-        yield return _sso.AutoLogin((List<(Account, User)> aus) =>
-        {
-            var options = aus.Select((elem) => new Dropdown.OptionData(elem.Item1.Id));
-            PanelManager.Instance.AccountsDropdown.AddOptions(options.ToList());
-        });
+        yield return _sso.PendingSSO(PanelManager.AddOptionToPanel, DefaultErrorHandler);
+        yield return _sso.AutoLogin(PanelManager.AddOptionsToPanel, DefaultErrorHandler);
     }
 
     private IEnumerator ConnectToBlockchain()
     {
         Postchain postchain = new Postchain(_baseURL);
-        yield return postchain.Blockchain(_blockchainRID,
-        (Blockchain _blockchain) =>
-        {
-            this._blockchain = _blockchain;
-        }, (string error) =>
-        {
-            throw new Exception(error);
-        });
+        yield return postchain.Blockchain(_blockchainRID, SetBlockchain, DefaultErrorHandler);
     }
 
     public void Connect()
@@ -73,4 +61,3 @@ public class SSOWebgl : MonoBehaviour
         _sso.InitiateLogin(_successUrl, _cancelUrl);
     }
 }
-

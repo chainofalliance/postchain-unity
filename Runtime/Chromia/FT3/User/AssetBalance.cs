@@ -1,6 +1,6 @@
 
-using System.Collections.Generic;
 using System.Collections;
+using Newtonsoft.Json;
 using System;
 
 namespace Chromia.Postchain.Ft3
@@ -16,61 +16,33 @@ namespace Chromia.Postchain.Ft3
             this.Asset = asset;
         }
 
-        public static IEnumerator GetByAccountId(string id, Blockchain blockchain, Action<AssetBalance[]> onSuccess)
+        [JsonConstructor]
+        public AssetBalance(string id, string name, long amount, string chain_id)
         {
-            yield return blockchain.Query<AssetBalanceQuery[]>("ft3.get_asset_balances", new List<(string, object)>() { ("account_id", id) }.ToArray(),
-           (AssetBalanceQuery[] balanceQuery) =>
-           {
-               onSuccess(mapAssetBalances(balanceQuery));
-           },
-           (string error) => { });
+            this.Amount = amount;
+            this.Asset = new Asset(name, chain_id);
         }
 
-        public static IEnumerator GetByAccountAndAssetId(string accountId, string assetId, Blockchain blockchain, Action<AssetBalance> onSuccess)
+        public static IEnumerator GetByAccountId(string id, Blockchain blockchain, Action<AssetBalance[]> onSuccess, Action<string> onError)
         {
-            yield return blockchain.Query<AssetBalanceQuery>("ft3.get_asset_balance", new List<(string, object)>() {
-                ("account_id", accountId),
-                ("asset_id", assetId)
-            }.ToArray(),
-           (AssetBalanceQuery balanceQuery) =>
-           {
-               onSuccess(mapAssetBalance(balanceQuery));
-           },
-           (string error) => { });
+            yield return blockchain.Query<AssetBalance[]>("ft3.get_asset_balances",
+                new (string, object)[] { ("account_id", id) }, onSuccess, onError);
         }
 
-        public static IEnumerator GiveBalance(string accountId, string assetId, int amount, Blockchain blockchain, Action onSuccess)
+        public static IEnumerator GetByAccountAndAssetId(string accountId, string assetId, Blockchain blockchain,
+            Action<AssetBalance> onSuccess, Action<string> onError)
         {
-            var request = blockchain.Connection.NewTransaction(new byte[][] { }, (string error) => { UnityEngine.Debug.Log(error); });
-            request.AddOperation("ft3.dev_give_balance", assetId, accountId, amount);
-            yield return request.PostAndWait(onSuccess);
+            yield return blockchain.Query<AssetBalance>("ft3.get_asset_balance",
+                new (string, object)[] { ("account_id", accountId), ("asset_id", assetId) }, onSuccess, onError);
         }
 
-        public struct AssetBalanceQuery
+        public static IEnumerator GiveBalance(string accountId, string assetId, int amount, Blockchain blockchain, Action onSuccess, Action<string> onError)
         {
-            public string id;
-            public string name;
-            public long amount;
-            public string chain_id;
-        }
-
-        public static AssetBalance[] mapAssetBalances(AssetBalanceQuery[] balanceQuery)
-        {
-            List<AssetBalance> assetsBalances = new List<AssetBalance>();
-            foreach (var item in balanceQuery)
-            {
-                assetsBalances.Add(mapAssetBalance(item));
-            }
-
-            return assetsBalances.ToArray();
-        }
-
-        public static AssetBalance mapAssetBalance(AssetBalanceQuery balanceQuery)
-        {
-            return new AssetBalance(
-                balanceQuery.amount,
-                new Asset(balanceQuery.name, balanceQuery.chain_id)
-            );
+            yield return blockchain.TransactionBuilder()
+                .Add(Operation.Op("ft3.dev_give_balance", assetId, accountId, amount))
+                .Add(AccountOperations.Nop())
+                .Build(new byte[][] { }, onError)
+                .PostAndWait(onSuccess);
         }
     }
 }

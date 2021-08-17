@@ -85,13 +85,13 @@ namespace Chromia.Postchain.Ft3
 
         public object[] ToGTV()
         {
-            var gtv = new List<object>(){
+            var gtv = new object[] {
                 Name,
                 Operator,
                 Value
             };
 
-            return gtv.ToArray();
+            return gtv;
         }
     }
 
@@ -186,13 +186,13 @@ namespace Chromia.Postchain.Ft3
 
         public object[] ToGTV()
         {
-            var gtv = new List<object>(){
+            var gtv = new object[] {
                 Left.ToGTV(),
                 Operator,
                 Right.ToGTV()
             };
 
-            return gtv.ToArray();
+            return gtv;
         }
     }
 }

@@ -14,7 +14,7 @@ public class AccountTest
         yield return BlockchainUtil.GetDefaultBlockchain((Blockchain _blockchain) => { blockchain = _blockchain; });
     }
 
-    private void DefaultErrorHandler(string error) { }
+    private void DefaultErrorHandler(string error) { UnityEngine.Debug.Log(error); }
     private void EmptyCallback() { }
 
     private IEnumerator AddAuthDescriptorTo(Account account, User adminUser, User user, Action onSuccess)
@@ -25,7 +25,7 @@ public class AccountTest
 
         yield return blockchain.TransactionBuilder()
             .Add(AccountOperations.AddAuthDescriptor(account.Id, adminUser.AuthDescriptor.ID, user.AuthDescriptor))
-            .Build(signers.ToArray())
+            .Build(signers.ToArray(), DefaultErrorHandler)
             .Sign(adminUser.KeyPair)
             .Sign(user.KeyPair)
             .PostAndWait(onSuccess)
@@ -51,7 +51,7 @@ public class AccountTest
         yield return SetupBlockchain();
         User user = TestUser.SingleSig();
         Account account = null;
-        yield return blockchain.RegisterAccount(user.AuthDescriptor, user, (Account _account) => { account = _account; });
+        yield return blockchain.RegisterAccount(user.AuthDescriptor, user, (Account _account) => account = _account, DefaultErrorHandler);
 
         Assert.NotNull(account);
     }
@@ -68,7 +68,7 @@ public class AccountTest
         accountBuilder.WithPoints(1);
 
         Account account = null;
-        yield return accountBuilder.Build((Account _account) => { account = _account; });
+        yield return accountBuilder.Build((Account _account) => { account = _account; }, DefaultErrorHandler);
         Assert.NotNull(account);
 
         yield return account.AddAuthDescriptor(
@@ -76,7 +76,7 @@ public class AccountTest
                     user.KeyPair.PubKey,
                     new List<FlagsType>() { FlagsType.Transfer }.ToArray()
             ),
-            EmptyCallback
+            EmptyCallback, DefaultErrorHandler
         );
 
         Assert.AreEqual(2, account.AuthDescriptor.Count);
@@ -94,8 +94,7 @@ public class AccountTest
                 user.KeyPair.PubKey,
                 new List<FlagsType>() { FlagsType.Transfer }.ToArray()
             ),
-            blockchain.NewSession(user),
-            (Account _account) => account = _account
+            blockchain.NewSession(user), (Account _account) => account = _account, DefaultErrorHandler
         );
         Assert.NotNull(account);
 
@@ -103,10 +102,9 @@ public class AccountTest
             new SingleSignatureAuthDescriptor(
                 user.KeyPair.PubKey,
                 new List<FlagsType>() { FlagsType.Transfer }.ToArray()
-            ), EmptyCallback
+            ), EmptyCallback, DefaultErrorHandler
         );
 
-        // Assert.AreEqual(true, response.Error);
         Assert.AreEqual(1, account.AuthDescriptor.Count);
     }
 
@@ -154,14 +152,14 @@ public class AccountTest
         );
         yield return blockchain.TransactionBuilder()
             .Add(AccountDevOperations.Register(multisig))
-            .Build(multisig.Signers.ToArray())
+            .Build(multisig.Signers.ToArray(), DefaultErrorHandler)
             .Sign(user1.KeyPair)
             .Sign(user2.KeyPair)
             .PostAndWait(EmptyCallback)
         ;
 
         Account account = null;
-        yield return Account.GetById(multisig.ID, blockchain.NewSession(user1), (Account _account) => account = _account);
+        yield return Account.GetById(multisig.ID, blockchain.NewSession(user1), (Account _account) => account = _account, DefaultErrorHandler);
         Assert.NotNull(account);
 
         AuthDescriptor authDescriptor = new SingleSignatureAuthDescriptor(
@@ -171,13 +169,13 @@ public class AccountTest
 
         yield return blockchain.TransactionBuilder()
             .Add(AccountOperations.AddAuthDescriptor(account.Id, account.AuthDescriptor[0].ID, authDescriptor))
-            .Build(account.AuthDescriptor[0].Signers.ToArray())
+            .Build(account.AuthDescriptor[0].Signers.ToArray(), DefaultErrorHandler)
             .Sign(user1.KeyPair)
             .Sign(user2.KeyPair)
             .PostAndWait(EmptyCallback)
         ;
 
-        yield return account.Sync();
+        yield return account.Sync(EmptyCallback, DefaultErrorHandler);
 
         Assert.AreEqual(2, account.AuthDescriptor.Count);
     }
@@ -209,7 +207,7 @@ public class AccountTest
         Assert.True(successfully);
 
         Account account = null;
-        yield return blockchain.NewSession(user1).GetAccountById(multiSig.ID, (Account _account) => account = _account);
+        yield return blockchain.NewSession(user1).GetAccountById(multiSig.ID, (Account _account) => account = _account, DefaultErrorHandler);
         Assert.NotNull(account);
 
         successfully = false;
@@ -217,7 +215,7 @@ public class AccountTest
             new SingleSignatureAuthDescriptor(
                 user1.KeyPair.PubKey,
                 new List<FlagsType>() { FlagsType.Transfer }.ToArray()
-            ), () => successfully = true
+            ), () => successfully = true, DefaultErrorHandler
         );
 
         Assert.False(successfully);
@@ -234,13 +232,14 @@ public class AccountTest
         accountBuilder.WithParticipants(new List<KeyPair>() { user.KeyPair });
 
         Account account = null;
-        yield return accountBuilder.Build((Account _account) => { account = _account; });
+        yield return accountBuilder.Build((Account _account) => { account = _account; }, DefaultErrorHandler);
 
         Account[] accounts = null;
         yield return Account.GetByParticipantId(
             Util.ByteArrayToString(user.KeyPair.PubKey),
             blockchain.NewSession(user),
-            (Account[] _accounts) => { accounts = _accounts; }
+            (Account[] _accounts) => { accounts = _accounts; },
+            DefaultErrorHandler
         );
         Assert.AreEqual(1, accounts.Length);
         Assert.AreEqual(Util.ByteArrayToString(user.KeyPair.PubKey), Util.ByteArrayToString(accounts[0].AuthDescriptor[0].Signers[0]));
@@ -257,13 +256,13 @@ public class AccountTest
         AccountBuilder accountBuilder = AccountBuilder.CreateAccountBuilder(blockchain, user1);
         accountBuilder.WithParticipants(new List<KeyPair>() { user1.KeyPair });
         Account account = null;
-        yield return accountBuilder.Build((Account _account) => { account = _account; });
+        yield return accountBuilder.Build((Account _account) => { account = _account; }, DefaultErrorHandler);
 
         AccountBuilder accountBuilder2 = AccountBuilder.CreateAccountBuilder(blockchain, user2);
         accountBuilder2.WithParticipants(new List<KeyPair>() { user2.KeyPair });
         accountBuilder2.WithPoints(1);
         Account account2 = null;
-        yield return accountBuilder2.Build((Account _account) => { account2 = _account; });
+        yield return accountBuilder2.Build((Account _account) => { account2 = _account; }, DefaultErrorHandler);
 
         yield return AddAuthDescriptorTo(account2, user2, user1, EmptyCallback);
 
@@ -271,7 +270,8 @@ public class AccountTest
         yield return Account.GetByParticipantId(
             Util.ByteArrayToString(user1.KeyPair.PubKey),
             blockchain.NewSession(user1),
-            (Account[] _accounts) => { accounts = _accounts; }
+            (Account[] _accounts) => { accounts = _accounts; },
+            DefaultErrorHandler
         );
 
         Assert.AreEqual(2, accounts.Length);
@@ -286,10 +286,10 @@ public class AccountTest
 
         AccountBuilder accountBuilder = AccountBuilder.CreateAccountBuilder(blockchain, user);
         Account account = null;
-        yield return accountBuilder.Build((Account _account) => { account = _account; });
+        yield return accountBuilder.Build((Account _account) => { account = _account; }, DefaultErrorHandler);
 
         yield return Account.GetById(account.Id, blockchain.NewSession(user),
-        (Account _account) => Assert.AreEqual(account.Id.ToUpper(), _account.Id.ToUpper()));
+        (Account _account) => Assert.AreEqual(account.Id.ToUpper(), _account.Id.ToUpper()), DefaultErrorHandler);
     }
 
     // should have only one auth descriptor after calling deleteAllAuthDescriptorsExclude
@@ -306,14 +306,14 @@ public class AccountTest
         accountBuilder.WithPoints(4);
 
         Account account = null;
-        yield return accountBuilder.Build((Account _account) => { account = _account; });
+        yield return accountBuilder.Build((Account _account) => { account = _account; }, DefaultErrorHandler);
 
         yield return AddAuthDescriptorTo(account, user1, user2, EmptyCallback);
         yield return AddAuthDescriptorTo(account, user1, user3, EmptyCallback);
 
-        yield return account.DeleteAllAuthDescriptorsExclude(user1.AuthDescriptor, EmptyCallback);
+        yield return account.DeleteAllAuthDescriptorsExclude(user1.AuthDescriptor, EmptyCallback, DefaultErrorHandler);
         yield return blockchain.NewSession(user1).GetAccountById(account.Id,
-            (Account _account) => account = _account
+            (Account _account) => account = _account, DefaultErrorHandler
         );
         Assert.AreEqual(1, account.AuthDescriptor.Count);
     }
@@ -328,12 +328,12 @@ public class AccountTest
 
         yield return blockchain.Call(AccountOperations.Op("ft3.dev_register_account",
             new object[] { user.AuthDescriptor.ToGTV() })
-        , user, EmptyCallback);
+        , user, EmptyCallback, DefaultErrorHandler);
 
         BlockchainSession session = blockchain.NewSession(user);
 
         Account account = null;
-        yield return session.GetAccountById(user.AuthDescriptor.ID, (Account _account) => account = _account);
+        yield return session.GetAccountById(user.AuthDescriptor.ID, (Account _account) => account = _account, DefaultErrorHandler);
         Assert.NotNull(account);
     }
 
@@ -362,12 +362,12 @@ public class AccountTest
         yield return AddAuthDescriptorTo(account, user1, user2, EmptyCallback);
 
         Account account2 = null;
-        yield return blockchain.NewSession(user2).GetAccountById(account.Id, (Account _account) => account2 = _account);
+        yield return blockchain.NewSession(user2).GetAccountById(account.Id, (Account _account) => account2 = _account, DefaultErrorHandler);
         bool successfully = false;
-        yield return account2.DeleteAuthDescriptor(user2.AuthDescriptor, () => successfully = true);
+        yield return account2.DeleteAuthDescriptor(user2.AuthDescriptor, () => successfully = true, DefaultErrorHandler);
 
         Assert.True(successfully);
-        yield return account2.Sync();
+        yield return account2.Sync(EmptyCallback, DefaultErrorHandler);
         Assert.AreEqual(1, account2.AuthDescriptor.Count);
 
     }
@@ -405,10 +405,10 @@ public class AccountTest
         yield return AddAuthDescriptorTo(account, user1, user3, EmptyCallback);
 
         Account account2 = null;
-        yield return blockchain.NewSession(user3).GetAccountById(account.Id, (Account _account) => account2 = _account);
+        yield return blockchain.NewSession(user3).GetAccountById(account.Id, (Account _account) => account2 = _account, DefaultErrorHandler);
 
         bool successfully = false;
-        yield return account2.DeleteAuthDescriptor(user2.AuthDescriptor, () => successfully = true);
+        yield return account2.DeleteAuthDescriptor(user2.AuthDescriptor, () => successfully = true, DefaultErrorHandler);
         Assert.False(successfully);
     }
 }

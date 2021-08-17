@@ -17,7 +17,7 @@ public class PostchainTest
     [UnityTest]
     public IEnumerator PostchainTestRun1()
     {
-        string CHAINID = "1A3A5B4C919798B52292094185B37E71898CC245FA9F0AC51A33B473150FE889";
+        string CHAINID = "5759EB34C39B4D34744EC324DFEFAC61526DCEB37FB05D22EB7C95A184380205";
         string NODEURL = "http://localhost:7740";
 
         Blockchain blockchain = null;

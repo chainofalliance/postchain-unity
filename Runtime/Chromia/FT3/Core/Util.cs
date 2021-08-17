@@ -1,6 +1,6 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Text;
+using System;
 
 namespace Chromia.Postchain.Ft3
 {
@@ -27,7 +27,7 @@ namespace Chromia.Postchain.Ft3
 
         public static string AuthTypeToString(AuthType type)
         {
-            switch(type)
+            switch (type)
             {
                 case AuthType.SingleSig:
                     return "S";
@@ -37,10 +37,10 @@ namespace Chromia.Postchain.Ft3
                     return "";
             }
         }
-        
+
         public static string FlagTypeToString(FlagsType type)
         {
-            switch(type)
+            switch (type)
             {
                 case FlagsType.Account:
                     return "A";
@@ -53,7 +53,7 @@ namespace Chromia.Postchain.Ft3
 
         public static FlagsType StringToFlagType(string type)
         {
-            switch(type)
+            switch (type)
             {
                 case "A":
                     return FlagsType.Account;
@@ -66,7 +66,7 @@ namespace Chromia.Postchain.Ft3
 
         public static AuthType StringToAuthType(string type)
         {
-            switch(type)
+            switch (type)
             {
                 case "S":
                     return AuthType.SingleSig;

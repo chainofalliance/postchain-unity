@@ -1,10 +1,6 @@
-using System.Collections.Generic;
-using Newtonsoft.Json.Utilities;
 using Chromia.Postchain.Ft3;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
-using System.Linq;
 using System;
 
 public class SSOStandalone : MonoBehaviour
@@ -23,10 +19,6 @@ public class SSOStandalone : MonoBehaviour
     {
         ProtocolHandler.HandleTempTx(_customProtocolName);
         SSO.VaultUrl = _vaultUrl;
-
-        AotHelper.EnsureList<AssetBalance.AssetBalanceQuery>();
-        AotHelper.EnsureList<AuthDescriptorFactory.AuthDescriptorQuery>();
-        AotHelper.EnsureList<Asset>();
     }
 
     private void Start()
@@ -34,30 +26,30 @@ public class SSOStandalone : MonoBehaviour
         StartCoroutine(StartRoutine());
     }
 
-    private IEnumerator StartRoutine()
-    {
-        yield return ConnectToBlockchain();
-        _sso = new SSO(this._blockchain, new SSOStoreLocalStorage());
-
-        yield return _sso.AutoLogin((List<(Account, User)> aus) =>
-        {
-            var options = aus.Select((elem) => new Dropdown.OptionData(elem.Item1.Id));
-            PanelManager.Instance.AccountsDropdown.AddOptions(options.ToList());
-        });
-    }
-
     private IEnumerator ConnectToBlockchain()
     {
         Postchain postchain = new Postchain(_baseURL);
-        yield return postchain.Blockchain(_blockchainRID,
-        (Blockchain _blockchain) =>
-        {
-            this._blockchain = _blockchain;
-        }, (string error) =>
-        {
-            throw new Exception(error);
-        });
+        yield return postchain.Blockchain(_blockchainRID, SetBlockchain, DefaultErrorHandler);
     }
+
+    private void SetBlockchain(Blockchain blockchain)
+    {
+        this._blockchain = blockchain;
+    }
+
+    private void DefaultErrorHandler(string error)
+    {
+        throw new Exception(error);
+    }
+
+    private IEnumerator StartRoutine()
+    {
+        yield return ConnectToBlockchain();
+        _sso = new SSO(this._blockchain);
+
+        yield return _sso.AutoLogin(PanelManager.AddOptionsToPanel, DefaultErrorHandler);
+    }
+
 
     private IEnumerator SSOS()
     {
@@ -74,11 +66,7 @@ public class SSOStandalone : MonoBehaviour
         payload = payload.Split("?"[0])[1];
         string raw = payload.Split("="[0])[1];
 
-        yield return _sso.FinalizeLogin(raw, ((Account, User) ac) =>
-        {
-            var options = new Dropdown.OptionData[] { new Dropdown.OptionData(ac.Item1.Id) };
-            PanelManager.Instance.AccountsDropdown.AddOptions(options.ToList());
-        });
+        yield return _sso.FinalizeLogin(raw, PanelManager.AddOptionToPanel, DefaultErrorHandler);
     }
 
     public void Connect()

@@ -13,7 +13,7 @@ public class XCTransferTest
         yield return BlockchainUtil.GetDefaultBlockchain((Blockchain _blockchain) => { blockchain = _blockchain; });
     }
 
-    private void DefaultErrorHandler(string error) { }
+    private void DefaultErrorHandler(string error) { UnityEngine.Debug.Log(error); }
     private void EmptyCallback() { }
 
     // Cross-chain transfer
@@ -22,7 +22,7 @@ public class XCTransferTest
     {
         yield return SetupBlockchain();
         Asset asset = null;
-        yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset);
+        yield return Asset.Register(TestUtil.GenerateAssetName(), TestUtil.GenerateId(), blockchain, (Asset _asset) => asset = _asset, DefaultErrorHandler);
 
         var destinationChainId = TestUtil.GenerateId();
         var destinationAccountId = TestUtil.GenerateId();
@@ -35,17 +35,18 @@ public class XCTransferTest
         Account account = null;
         yield return accountBuilder.Build((Account _account) => account = _account);
 
-        yield return account.XcTransfer(destinationChainId, destinationAccountId, asset.Id, 10, EmptyCallback);
+        yield return account.XcTransfer(destinationChainId, destinationAccountId, asset.Id, 10, EmptyCallback, DefaultErrorHandler);
 
         AssetBalance accountBalance = null;
-        yield return AssetBalance.GetByAccountAndAssetId(account.Id, asset.Id, blockchain, (AssetBalance _balance) => accountBalance = _balance);
+        yield return AssetBalance.GetByAccountAndAssetId(account.Id, asset.Id, blockchain, (AssetBalance _balance) => accountBalance = _balance, DefaultErrorHandler);
 
         AssetBalance chainBalance = null;
         yield return AssetBalance.GetByAccountAndAssetId(
             TestUtil.BlockchainAccountId(destinationChainId),
             asset.Id,
             blockchain,
-            (AssetBalance _balance) => chainBalance = _balance
+            (AssetBalance _balance) => chainBalance = _balance,
+            DefaultErrorHandler
         );
 
         Assert.AreEqual(90, accountBalance.Amount);

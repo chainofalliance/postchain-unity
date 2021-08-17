@@ -1,8 +1,6 @@
 using System.Collections;
 using System;
 
-using Chromia.Postchain.Client.Unity;
-
 namespace Chromia.Postchain.Ft3
 {
     public class BlockchainSession
@@ -16,36 +14,29 @@ namespace Chromia.Postchain.Ft3
             this.Blockchain = blockchain;
         }
 
-        public IEnumerator GetAccountById(string id, Action<Account> onSuccess)
+        public IEnumerator GetAccountById(string id, Action<Account> onSuccess, Action<string> onError)
         {
-            yield return Account.GetById(id, this, onSuccess);
+            yield return Account.GetById(id, this, onSuccess, onError);
         }
 
-        public IEnumerator GetAccountsByParticipantId(string id, Action<Account[]> onSuccess)
+        public IEnumerator GetAccountsByParticipantId(string id, Action<Account[]> onSuccess, Action<string> onError)
         {
-            yield return Account.GetByParticipantId(id, this, onSuccess);
+            yield return Account.GetByParticipantId(id, this, onSuccess, onError);
         }
 
-        public IEnumerator GetAccountsByAuthDescriptorId(string id, Action<Account[]> onSuccess)
+        public IEnumerator GetAccountsByAuthDescriptorId(string id, Action<Account[]> onSuccess, Action<string> onError)
         {
-            yield return Account.GetByAuthDescriptorId(id, this, onSuccess);
-        }
-
-        public PostchainTransaction NewTransaction()
-        {
-            return this.Blockchain.Connection.NewTransaction(
-                new byte[][] { this.User.KeyPair.PubKey },
-                (string error) => { UnityEngine.Debug.Log(error); });
+            yield return Account.GetByAuthDescriptorId(id, this, onSuccess, onError);
         }
 
         public IEnumerator Query<T>(string queryName, (string name, object content)[] queryObject, Action<T> onSuccess, Action<string> onError)
         {
-            return this.Blockchain.Query<T>(queryName, queryObject, onSuccess, onError);
+            yield return this.Blockchain.Query<T>(queryName, queryObject, onSuccess, onError);
         }
 
-        public IEnumerator Call(Operation operation, Action onSuccess)
+        public IEnumerator Call(Operation operation, Action onSuccess, Action<string> onError)
         {
-            return this.Blockchain.Call(operation, this.User, onSuccess);
+            yield return this.Blockchain.Call(operation, this.User, onSuccess, onError);
         }
     }
 }
