@@ -116,8 +116,84 @@ private void ErrorHandler(string error)
 #endregion
 ```
 
-### SSO
-See `Samples/FT3/SSO*` for demo scenes.
+### SSO Standalone
+```C#
+private const string CUSTOM_SCHEME = "sso";
+
+private Blockchain _blockchain;
+private SSO _sso;
+
+private void Awake()
+{
+    ProtocolHandler.HandleTempTx(CUSTOM_SCHEME);
+    SSO.VaultUrl = "https://vault-testnet.chromia.com";
+}
+
+private void Start()
+{
+    StartCoroutine(ExampleFlow());
+}
+
+private IEnumerator ExampleFlow()
+{
+    Postchain postchain = new Postchain("http://localhost:7740");
+    yield return postchain.Blockchain("5759EB34C39B4D34744EC324DFEFAC61526DCEB37FB05D22EB7C95A184380205",
+        SetBlockchain, ErrorHandler);
+
+    _sso = new SSO(this._blockchain);
+
+
+    List<(Account, User)> found = null;
+    yield return _sso.AutoLogin((List<(Account, User)> aus) => found = aus, ErrorHandler);
+
+    if (found.Count == 0)
+    {
+        // Trigger login
+        yield return SSOS();
+    }
+}
+
+private IEnumerator SSOS()
+{
+    ProtocolHandler.Register(CUSTOM_SCHEME);
+    // Use registered scheme here
+    _sso.InitiateLogin("sso://success", "sso://cancel");
+
+    while (_sso.Store.TmpTx == null)
+    {
+        yield return new WaitForSeconds(3);
+        _sso.Store.Load();
+    }
+    string payload = _sso.Store.TmpTx;
+
+    try
+    {
+        payload = payload.Split("?"[0])[1];
+        payload = payload.Split("="[0])[1];
+    }
+    catch (System.Exception)
+    {
+        throw;
+    }
+
+    yield return _sso.FinalizeLogin(payload,
+        ((Account, User) au) => Debug.Log("Successfully registered via sso"), ErrorHandler);
+}
+
+#region Helper
+private void SetBlockchain(Blockchain blockchain)
+{
+    this._blockchain = blockchain;
+}
+
+private void ErrorHandler(string error)
+{
+    throw new Exception(error);
+}
+#endregion
+```
+
+See `Samples/FT3/SSO*` for for further demo scenes and webgl.
 
 ## Test
 
