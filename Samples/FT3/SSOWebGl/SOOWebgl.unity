@@ -974,14 +974,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 948567252}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5edd308459237acbea0e455b5b35fc48, type: 3}
+  m_Script: {fileID: 11500000, guid: 1c4e88d92c5bfcdf3bcfa4d9c84a9b63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _blockchainRID: 1A3A5B4C919798B52292094185B37E71898CC245FA9F0AC51A33B473150FE889
+  _blockchainRID: 5759EB34C39B4D34744EC324DFEFAC61526DCEB37FB05D22EB7C95A184380205
   _baseURL: http://localhost:7740
-  _vaultUrl: https://dev.vault.chromia-development.com/
-  _successUrl: http://localhost:3000/
-  _cancelUrl: http://localhost:3000/
+  _vaultUrl: https://vault-testnet.chromia.com
+  _successUrl: https://localhost:3000/success
+  _cancelUrl: https://localhost:3000/cancel
 --- !u!4 &948567254
 Transform:
   m_ObjectHideFlags: 0
