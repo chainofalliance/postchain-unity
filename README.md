@@ -21,6 +21,10 @@ See `Samples/FT3/SSO*` for demo scenes.
 
 Run the rell code defined in `Samples/FT3/rell` and use Unity's internal test suite.
 
+## Filestorage
+Credits to snieking
+https://github.com/snieking/rell-filestorage
+
 ## Support
 
 Use the [Chromia Dev Telegram Chat](https://t.me/ChromiaDev)
