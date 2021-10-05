@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine.TestTools;
 using Chromia.Postchain.Ft3;
+using Chromia.Postchain.Fs;
 using NUnit.Framework;
 using UnityEngine;
 using System.Linq;
@@ -12,7 +13,7 @@ using System;
 public class StoreFile
 {
     private const string FILEHUB_NODE = "http://127.0.0.1:7740";
-    private const string FILEHUB_BRID = "5670D9DCB9FB241B1B0FF8C46B26CFE600B1F630D8707CCB07DC1D24DDF7E744";
+    private const string FILEHUB_BRID = "ED5C6FF9862E0E545C472E3FB033A776CD7FAB28AFE28124ABF6245A26CA579D";
 
     private static System.Random random = new System.Random();
 
