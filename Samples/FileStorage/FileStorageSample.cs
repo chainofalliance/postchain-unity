@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Chromia.Postchain.Ft3;
 using Chromia.Postchain.Fs;
 using System.Collections;
@@ -31,7 +32,13 @@ public class FileStorageSample : MonoBehaviour
         // wait for filehub
         while (fileHub.Blockchain == null) yield return new WaitForSeconds(0.5f);
 
-        User user = TestUser.SingleSig();
+        KeyPair keyPair = new KeyPair();
+        SingleSignatureAuthDescriptor singleSigAuthDescriptor = new SingleSignatureAuthDescriptor(
+            keyPair.PubKey,
+            new List<FlagsType>() { FlagsType.Account, FlagsType.Transfer }.ToArray(),
+            null
+        );
+        User user = new User(keyPair, singleSigAuthDescriptor);
         Account account = null;
         yield return fileHub.Blockchain.RegisterAccount(
             user.AuthDescriptor, user,

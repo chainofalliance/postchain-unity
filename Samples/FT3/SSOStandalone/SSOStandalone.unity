@@ -708,7 +708,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 713966108}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2703970eca4dc6b0abd86b419a36e329, type: 3}
+  m_Script: {fileID: 11500000, guid: 7ed7e608c3a71274989f8b5d11467a7d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ConnectButton: {fileID: 637945322}
@@ -1003,7 +1003,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74ab5d42b74d9686e8a190a723e72669, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _blockchainRID: 5759EB34C39B4D34744EC324DFEFAC61526DCEB37FB05D22EB7C95A184380205
+  _blockchainRID: 849AD8C9AC720A21962187D0BDA6168DA274E1D17D39AAD513559171FDDC6914
   _baseURL: http://localhost:7740
   _vaultUrl: https://vault-testnet.chromia.com
   _successUrl: sso://success
