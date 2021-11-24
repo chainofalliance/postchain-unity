@@ -53,6 +53,8 @@ namespace Chromia.Postchain.Client.Unity
             {
                 this.content = request.downloadHandler.text;
             }
+
+            uploader.Dispose();
         }
 
         private bool CheckError(UnityWebRequest request)
