@@ -86,7 +86,12 @@ namespace Chromia.Postchain.Ft3
                 "{0}/?route=/authorize&dappId={1}&pubkey={2}&successAction={3}&cancelAction={4}&version=0.1",
                 SSO._vaultUrl, this.Blockchain.Id, Util.ByteArrayToString(keyPair.PubKey), new Uri(successUrl), new Uri(cancelUrl)
             );
+
+#if UNITY_WEBGL
+            SSOStoreWebgl.SetUrlAndReload(sb.ToString());
+#else
             UnityEngine.Application.OpenURL(sb.ToString());
+#endif
         }
 
         public IEnumerator FinalizeLogin(string tx, Action<(Account, User)> onSuccess, Action<string> onError)
@@ -165,6 +170,12 @@ namespace Chromia.Postchain.Ft3
             {
                 var raw = pairs["rawTx"];
                 yield return FinalizeLogin(raw, onSuccess, onError);
+
+                // Clear url for refresh bug
+                string[] subs = url.Split('?');
+#if UNITY_WEBGL
+                SSOStoreWebgl.SetCleanUrl(subs[0]);
+#endif
             }
         }
     }

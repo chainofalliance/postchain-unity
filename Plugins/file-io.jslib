@@ -29,6 +29,14 @@ mergeInto(LibraryManager.library, {
 
   CloseWindow: function() {
     window.close();
+  },
+
+  SetCleanUrl: function(key) {
+    window.history.pushState({}, null, Pointer_stringify(key));
+  },
+
+  SetUrlAndReload: function(key) {
+    window.location.href = Pointer_stringify(key);
   }
 
 });

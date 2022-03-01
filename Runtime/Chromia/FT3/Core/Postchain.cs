@@ -1,3 +1,4 @@
+using Chromia.Postchain.Client.Unity;
 using System.Collections;
 using System;
 
@@ -19,6 +20,23 @@ namespace Chromia.Postchain.Ft3
             );
 
             yield return Ft3.Blockchain.Initialize(id, directoryService, onSuccess, onError);
+        }
+
+        public IEnumerator Blockchain(int chainId, Action<Blockchain> onSuccess, Action<string> onError)
+        {
+            var request = new PostchainRequestRaw(_url, "brid/iid_" + chainId);
+
+            yield return request.Get();
+
+            if (request.error)
+            {
+                UnityEngine.Debug.LogError("InitializeBRIDFromChainID: " + request.errorMessage);
+            }
+            else
+            {
+                var id = request.content;
+                yield return Blockchain(id, onSuccess, onError);
+            }
         }
     }
 }

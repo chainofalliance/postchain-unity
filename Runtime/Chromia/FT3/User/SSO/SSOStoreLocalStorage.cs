@@ -23,6 +23,12 @@ namespace Chromia.Postchain.Ft3
 
         [DllImport("__Internal")]
         public static extern void CloseWindow();
+
+        [DllImport("__Internal")]
+        public static extern void SetCleanUrl(string key);
+
+        [DllImport("__Internal")]
+        public static extern void SetUrlAndReload(string key);
     }
 #endif
 
