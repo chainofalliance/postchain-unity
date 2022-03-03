@@ -17,15 +17,13 @@ public class SSOAndroid : MonoBehaviour
 
     private void Awake()
     {
+        SSO.VaultUrl = _vaultUrl;
+
         Application.deepLinkActivated += onDeepLinkActivated;
         if (!string.IsNullOrEmpty(Application.absoluteURL))
-        {
-            // Cold start and Application.absoluteURL not null so process Deep Link.
             onDeepLinkActivated(Application.absoluteURL);
-        }
-        // Initialize DeepLink Manager global variable.
-        else deeplinkURL = "[none]";
-        SSO.VaultUrl = _vaultUrl;
+        else
+            deeplinkURL = "[none]";
     }
 
     private void Start()
@@ -41,7 +39,6 @@ public class SSOAndroid : MonoBehaviour
         if (payload.ContainsKey("rawTx"))
         {
             var raw = payload["rawTx"];
-            Debug.Log("Raw:" + raw);
             StartCoroutine(HandlePayload(raw));
         }
     }
