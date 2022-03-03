@@ -962,7 +962,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bb3e26b0647924e19776b4646a9db59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _baseURL: https://32vfhq9ox0.execute-api.eu-north-1.amazonaws.com/staging/
+  _baseURL: http://localhost:7740
   _vaultUrl: https://vault-testnet.chromia.com
   _successUrl: unitydl://success
   _cancelUrl: unitydl://cancel
