@@ -51,7 +51,7 @@ namespace Chromia.Postchain.Ft3
             {
                 result = SSOStoreWebgl.LoadFromLocalStorage(STORAGEKEY);
             }
-#elif UNITY_STANDALONE
+#elif UNITY_STANDALONE  || UNITY_ANDROID
             FileManager.LoadFromFile(FILENAME, out result);
 #endif
             if (!String.IsNullOrEmpty(result))
@@ -69,7 +69,7 @@ namespace Chromia.Postchain.Ft3
             string data = JsonConvert.SerializeObject(SSOData, Formatting.Indented);
 #if UNITY_WEBGL
             SSOStoreWebgl.SaveToLocalStorage(STORAGEKEY, data);
-#elif UNITY_STANDALONE
+#elif UNITY_STANDALONE || UNITY_ANDROID
             FileManager.WriteToFile(FILENAME, data);
 #endif
         }
