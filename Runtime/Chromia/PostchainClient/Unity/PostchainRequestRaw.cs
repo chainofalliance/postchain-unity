@@ -26,32 +26,36 @@ namespace Chromia.Postchain.Client.Unity
 
         public virtual IEnumerator Get()
         {
-            var request = new UnityWebRequest(this._uri, "GET");
-            request.downloadHandler = new DownloadHandlerBuffer();
-            yield return request.SendWebRequest();
-
-            if (!CheckError(request))
+            using (var request = new UnityWebRequest(this._uri, "GET"))
             {
-                this.content = request.downloadHandler.text;
+                request.downloadHandler = new DownloadHandlerBuffer();
+                yield return request.SendWebRequest();
+
+                if (!CheckError(request))
+                {
+                    this.content = request.downloadHandler.text;
+                }    
             }
         }
-
+        
         public virtual IEnumerator Post(string payload)
         {
-            var request = new UnityWebRequest(this._uri, "POST");
-            byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(payload);
-            var uploader = new UploadHandlerRaw(bodyRaw);
-
-            uploader.contentType = "application/json";
-
-            request.uploadHandler = uploader;
-            request.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
-
-            yield return request.SendWebRequest();
-
-            if (!CheckError(request))
+            using (var request = new UnityWebRequest(this._uri, "POST"))
             {
-                this.content = request.downloadHandler.text;
+                byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(payload);
+                var uploader = new UploadHandlerRaw(bodyRaw);
+
+                uploader.contentType = "application/json";
+
+                request.uploadHandler = uploader;
+                request.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
+
+                yield return request.SendWebRequest();
+
+                if (!CheckError(request))
+                {
+                    this.content = request.downloadHandler.text;
+                }    
             }
         }
 
