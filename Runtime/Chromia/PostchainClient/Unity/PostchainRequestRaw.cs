@@ -30,10 +30,8 @@ namespace Chromia.Postchain.Client.Unity
             request.downloadHandler = new DownloadHandlerBuffer();
             yield return request.SendWebRequest();
 
-            if (!CheckError(request))
-            {
-                this.content = request.downloadHandler.text;
-            }
+            CheckError(request);
+            this.content = request.downloadHandler?.text;
         }
 
         public virtual IEnumerator Post(string payload)
@@ -49,10 +47,8 @@ namespace Chromia.Postchain.Client.Unity
 
             yield return request.SendWebRequest();
 
-            if (!CheckError(request))
-            {
-                this.content = request.downloadHandler.text;
-            }
+            CheckError(request);
+            this.content = request.downloadHandler?.text;
         }
 
         private bool CheckError(UnityWebRequest request)
